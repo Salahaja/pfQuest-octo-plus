@@ -1,0 +1,30 @@
+## Interface: 11200
+## Title: |cff33ffccpf|cffffffffQuest |cffcccccc[Octo DB+]
+## Author: Shagu, Gurky, paokkerkir; extras by Salahaja
+## Contributors: Antealis, HumbleKagu, KasVital, Haaxor1689, IcemanHHW, fatpowaranga
+## Notes: OctoWoW database for pfQuest, with Moonwhisper Coast and the quests pfQuest-octo is missing. Replaces pfQuest-octo - do not run both.
+## Version: 1.0.0
+## Dependencies: pfQuest
+## SavedVariables: pfQuest_turtlecount
+
+# --- the OctoWoW database, as published by paokkerkir/pfQuest-octo ---------
+init\data-turtle.xml
+init\enUS-turtle.xml
+init\ruRU-turtle.xml
+init\zhCN-turtle.xml
+
+overwrites.lua
+
+patchtable.lua
+
+# --- additions -------------------------------------------------------------
+# These ADD to the tables patchtable.lua has just merged, so they must come
+# after it. data/enUS are the quests pfQuest-turtle carries and octo does not;
+# octo/octo-enUS are built from octowow.st for Moonwhisper Coast and the rest
+# that no published database has at all.
+extra\data.lua
+extra\enUS.lua
+extra\octo.lua
+extra\octo-enUS.lua
+
+extra\inject.lua

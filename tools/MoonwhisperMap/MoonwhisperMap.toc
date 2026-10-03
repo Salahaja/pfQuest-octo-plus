@@ -1,0 +1,8 @@
+## Interface: 11200
+## Title: |cff7fd5ffMoonwhisper|cffffffffMap
+## Notes: Measures how Moonwhisper Coast's map maps onto Winterspring's, so pfQuest pins can be converted.
+## Author: Salahaja
+## Version: 1.0.0
+## SavedVariables: MoonwhisperMap_Samples
+
+MoonwhisperMap.lua

@@ -1,0 +1,5 @@
+# Build intermediates, not the database itself.
+tools/cache/
+tools/fetch.txt
+*.pyc
+__pycache__/
