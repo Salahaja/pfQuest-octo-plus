@@ -558,18 +558,48 @@ class Crawler:
         return cats
 
     def menu(self):
+        """The quest menu's categories. A group with children is listed as its
+        children ("0.<zone>", the parent half is ignored by the site); a group
+        without (the custom list -44) is asked for on its own. Asking for a
+        group that has children, or for a child as if it were a group, gets
+        the site's global list of 300 instead -- which is how this first went
+        wrong."""
         page, _ = self.fetch("menu", "locale_enus", BASE + "templates/wowhead/js/locale_enus.js")
         i = page.find("var mn_quests")
-        body = page[i:page.find(";", i)] if i >= 0 else ""
+        if i < 0:
+            return {}
+        start = page.index("[", i)
+        depth = 0
+        for end in range(start, len(page)):
+            depth += {"[": 1, "]": -1}.get(page[end], 0)
+            if depth == 0:
+                break
+        body = page[start + 1:end]
+        entries, depth, last = [], 0, 0
+        for n, ch in enumerate(body):
+            depth += {"[": 1, "]": -1}.get(ch, 0)
+            if ch == "," and depth == 0:
+                entries.append(body[last:n])
+                last = n + 1
+        entries.append(body[last:])
         cats = {}
-        for top in re.findall(r"\[\s*(-?\d+)\s*,\s*\"", body):
-            cats[str(int(top))] = "menu"
+        for e in entries:
+            head = re.match(r"\s*\[\s*(-?\d+)\s*,\s*\"", e)
+            if not head:
+                continue
+            children = re.findall(r"\[\s*(-?\d+)\s*,\s*\"[^\"]*\"\s*\]", e[head.end():])
+            if children:
+                for c in children:
+                    cats["0.%d" % int(c)] = "menu"
+            else:
+                cats[str(int(head.group(1)))] = "menu"
         return cats
 
     def sweep_category(self, cat, source):
         page, new = self.fetch("category", cat, BASE + "?quests=" + cat)
         rows = parse_category(page, cat)
-        if rows is None:
+        if rows is None or ("." not in cat and len(rows) == 300):
+            # not the list asked for: the site answered with its global one
             return 0, new
         for row in rows:
             self.store.found(row["id"], "category:" + cat, row)
