@@ -49,6 +49,8 @@ sys.path.insert(0, HERE)
 import octodb  # noqa: E402
 
 ORDER = ["tkb", "ryan", "octo", "base"]
+# the sources trusted to fill a start, end or prerequisite nobody else names
+FILL_SOURCES = ("tkb", "ryan")
 SOURCE_DIRS = {
     "tkb": "tkb-turtle",
     "ryan": "ryanmr82-turtle",
@@ -263,12 +265,40 @@ class Build:
             cands = [(n, self.src[n]["quests"][qid]) for n in ORDER
                      if isinstance(self.src[n]["quests"].get(qid), dict)]
             if cands:
-                best = max(cands, key=lambda c: (score(c[1], s), -ORDER.index(c[0])))
-                name, rec = best[0], copy.deepcopy(best[1])
+                ranked = sorted(cands, key=lambda c: (-score(c[1], s), ORDER.index(c[0])))
+                name, rec = ranked[0][0], copy.deepcopy(ranked[0][1])
                 self.bump("quest base: " + name)
             else:
-                name, rec = None, {}
+                ranked, name, rec = [], None, {}
                 self.bump("quest base: server only")
+
+            #[[ What neither the server nor the chosen record knows, the next
+            #   record that does fills in. The server names no giver for 18 of
+            #   Moro'gai Village's quests and TKB's export has none either --
+            #   only ryanmr82's in-game scans do, and taking TKB's record whole
+            #   left those quests with nothing to pin.
+            #
+            #   Only from FILL_SOURCES. pfQuest-octo's givers for these gaps are
+            #   almost all "[Deprecated]" quests TKB leaves giverless on
+            #   purpose, and base pfQuest's prerequisites contradicted the
+            #   server's quest chain where it shows one. ryanmr82's
+            #   prerequisites -- TKB's own from before its 1.18.1 refresh
+            #   dropped them -- matched the server's chain 161 times of 161. ]]
+            chain = s.get("sections", {}).get("Series") or []
+            for field in ("start", "end", "pre"):
+                if rec.get(field) or (field != "pre" and s.get(field)):
+                    continue
+                for other, orec in ranked[1:]:
+                    if other not in FILL_SOURCES or not orec.get(field):
+                        continue
+                    if field == "pre" and qid in chain:
+                        at = chain.index(qid)
+                        if at == 0 or chain[at - 1] not in orec["pre"]:
+                            self.bump("pre from %s refused: the server's chain disagrees" % other)
+                            continue
+                    rec[field] = copy.deepcopy(orec[field])
+                    self.bump("%s taken from %s (the server names none)" % (field, other))
+                    break
 
             # the server's word on who starts and ends it -- all of what it
             # names at once, so a second entry does not replace the first
@@ -357,6 +387,14 @@ class Build:
         #   40554 names 60949-60951, the server's page 60385-60387. Only a page
         #   that came back empty counts; something never asked about is kept
         #   and listed in unverified, for octodb.py refs --extra. ]]
+        # everything ryanmr82's scans place on the Moonwhisper map -- seen
+        # standing there in game, whatever the quest is filed under
+        self.scanned_on_moonwhisper = {
+            (letter, ident)
+            for letter, kind in (("U", "units"), ("O", "objects"))
+            for ident, rec in self.src["ryan"][kind].items()
+            if isinstance(rec, dict) and any(c[2] == MW_ZONE for c in rec.get("coords") or [])}
+
         known = {"U": set(self.site_npc) | set(self.absent_of["npc"]),
                  "O": set(self.site_obj) | set(self.absent_of["object"]),
                  "I": set(self.site_item) | set(self.absent_of["item"])}
@@ -371,6 +409,12 @@ class Build:
             s = self.site[qid]
             named = {(BUCKET[k], i) for which in ("start", "end") for k, i in s.get(which, [])}
             named |= set(site_targets(s))
+            #[[ ...and so does what ryanmr82 scanned in game for a Moonwhisper
+            #   quest. The site's NPC list lacks Moro'gai Village entirely
+            #   (62850, 62851, 62920... come back empty) while those NPCs stand
+            #   in the world and hand out the quests -- the site's gap, which
+            #   is also why its quest pages name no giver there. ]]
+            named |= self.scanned_on_moonwhisper
             for which in ("start", "end", "obj"):
                 part = rec.get(which)
                 if not isinstance(part, dict):

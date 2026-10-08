@@ -1,6 +1,6 @@
 # Build report
 
-Built 2026-10-08 08:16 from the server inventory exported 2026-10-08 08:16:52.
+Built 2026-10-08 17:02 from the server inventory exported 2026-10-08 17:02:53.
 
 | source | revision |
 |---|---|
@@ -22,6 +22,7 @@ Built 2026-10-08 08:16 from the server inventory exported 2026-10-08 08:16:52.
 |---|---|
 | class mask corrected | 10 |
 | end corrected from the server | 37 |
+| end taken from ryan (the server names none) | 47 |
 | item source added: base | 152 |
 | item source added: octo | 32 |
 | item source added: ryan | 114 |
@@ -37,15 +38,17 @@ Built 2026-10-08 08:16 from the server inventory exported 2026-10-08 08:16:52.
 | objects from server | 1 |
 | objects from tkb | 21146 |
 | objects placed by the server (no source had a position) | 1 |
+| pre taken from ryan (the server names none) | 170 |
+| pre taken from tkb (the server names none) | 8 |
 | quest base: ryan | 678 |
 | quest base: server only | 5 |
 | quest base: tkb | 5869 |
 | race mask corrected | 4 |
 | reference dropped: the server has no such item | 6 |
-| reference dropped: the server has no such npc | 61 |
-| reference dropped: the server has no such object | 3 |
+| reference dropped: the server has no such npc | 47 |
 | required level corrected | 17 |
 | start corrected from the server | 7 |
+| start taken from ryan (the server names none) | 15 |
 | units faction from the server | 16 |
 | units from base | 1234 |
 | units from octo | 42 |
