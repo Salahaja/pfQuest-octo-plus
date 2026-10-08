@@ -1,167 +1,138 @@
 # pfQuest-octo-plus
 
-The OctoWoW quest database for [pfQuest](https://github.com/shagu/pfQuest),
-with **Moonwhisper Coast** and the quests `pfQuest-octo` is missing.
+The OctoWoW quest database for [pfQuest](https://github.com/The-Kludge-Bureau/pfQuest),
+checked quest by quest against the server's own database at
+[octowow.st/db](https://octowow.st/db/).
 
-One addon. You do not need `pfQuest-octo` as well — it is in here.
+One addon. It replaces `pfQuest-octo` and `pfQuest-turtle` — do not run
+either alongside it.
 
 ## Install
 
-1. Install [pfQuest](https://github.com/shagu/pfQuest) if you have not already.
-2. Download this repository (**Code → Download ZIP**).
-3. Unzip it, rename the folder `pfQuest-octo-plus-main` to **`pfQuest-octo-plus`**.
-4. Put it in `Interface\AddOns`.
-5. **Disable `pfQuest-octo` and `pfQuest-turtle`** if you have either.
-6. Restart WoW.
+1. Install [pfQuest](https://github.com/The-Kludge-Bureau/pfQuest) 8.0.0 or
+   newer (the maintained one; Shagu's 7.x works but misses the faster name
+   index this rebuilds).
+2. Download this repository (**Code → Download ZIP**), unzip it, and rename
+   the folder `pfQuest-octo-plus-main` to **`pfQuest-octo-plus`**.
+3. Put it in `Interface\AddOns`.
+4. **Disable `pfQuest-octo` and `pfQuest-turtle`** if you have either.
+5. Restart WoW.
 
-`/pfoe` reports what it added.
+## What is in it
 
-> **Do not run this alongside `pfQuest-octo` or `pfQuest-turtle`.** All three
-> assign the same database tables, so whichever loads last silently wins and
-> the others are discarded — nothing errors, the counts are just quietly wrong.
-> The addon checks for this and tells you in chat, but it is easier to just
-> disable them.
+Every quest the server has — 6,552 of them — and nothing it does not. For
+each one, the server decides who gives it and who takes it, its level and
+required level, which races and classes can take it, its name, and the
+objective targets its page lists. What the server's pages cannot tell, comes
+from the published databases:
 
-## What it adds over pfQuest-octo
-
-| | quests |
+| source | used for |
 |---|---|
-| pfQuest (vanilla) | 4,433 |
-| with the Octo database | 6,238 |
-| **with this addon** | **6,658** |
+| [The-Kludge-Bureau/pfQuest-turtle](https://github.com/The-Kludge-Bureau/pfQuest-turtle) | Turtle's 1.18.1 export — the client OctoWoW runs. First choice for every quest, NPC, object and item. |
+| [ryanmr82/pfQuest-turtle](https://github.com/ryanmr82/pfQuest-turtle) | OctoWoW's Moonwhisper Coast from in-game scans: objectives and spawns. |
+| [paokkerkir/pfQuest-octo](https://github.com/paokkerkir/pfQuest-octo) | Hand-made objective fixes (NPCs you talk to, objects you use) the exports never extracted. |
+| pfQuest itself | Everything above leaves out. |
 
-- **103 Moonwhisper Coast quests** — in no published pfQuest database at all,
-  and the zone registered as a map so pins show on it *and* on the minimap.
-- **260 quests** that `pfQuest-turtle` carries and `pfQuest-octo` does not,
-  with the 169 NPCs, 12 objects and 160 items they point at.
-- **57 more** from other zones that nothing had, including 5641 and 5734.
+Compared with the server (`python tools/check.py`):
 
-Upstream [`pfQuest-octo`](https://github.com/paokkerkir/pfQuest-octo) has not
-moved since **2026-05-12** and its last two commits are *"revert to 1.17.2
-data"*, so none of the above is coming from there.
+| | pfQuest-octo | ryanmr82 | TKB 1.18.1 | v1 of this | **v2 (this)** |
+|---|---|---|---|---|---|
+| quests | 6,238 | 6,608 | 6,701 | 6,658 | **6,552** |
+| server quests missing | 415 | 54 | 5 | 4 | **0** |
+| quests the server does not have | 101 | 110 | 154 | 110 | **0** |
+| start / end differs | 5 / 36 | 5 / 33 | 108 / 103 | 2 / 30 | **0 / 0** |
+| objective targets missing | 32 | 18 | 835 | 127 | **0** |
+| level / required level differs | 11 / 17 | 10 / 15 | 10 / 16 | 11 / 23 | **0 / 0** |
+| race / class mask differs | 4 / 0 | 22 / 1 | 1 / 288 | 5 / 0 | **0 / 0** |
+| start cannot draw a pin | 111 | 118 | 214 | 125 | **106** |
 
-## Where the data comes from
+Checked 2026-10-08 against the server inventory of the same day.
 
-The Octo database is `pfQuest-octo` as published, unmodified — `db/`,
-`init/`, `overwrites.lua` and `patchtable.lua` are theirs.
+## What it cannot fix
 
-The additions are built two ways:
+- **106 quests whose giver has no position anywhere.** 63 event NPCs that
+  only spawn during their event (the Children's Week orphans), 21 dungeon NPCs
+  the site places at 0,0 (Dire Maul), 7 givers the server does not have, and
+  the 15 Ahn'Qiraj war effort officer quests — the officers are in the
+  server's database but not in the world until AQ opens (2027 on OctoWoW).
+  Their quests are listed; they just have no pin.
+- **20 quests that start from an item nothing drops** — a reward from
+  an earlier quest, or something crafted.
+- **Objectives the server's pages leave out.** Some quests complete by a
+  script or an area event (Trial of the Lake's Shrine Bauble); those come
+  from the exports, where they exist at all.
 
-- The 260 are lifted from `pfQuest-turtle`, which already had them with
-  coordinates. Only the quests that are actually missing are taken, so Octo's
-  own corrections are left alone and no Turtle-only content comes along.
-- Moonwhisper Coast and the rest are built from
-  [octowow.st/db](https://octowow.st/db/), the server's own database, by the
-  scripts in `tools/`.
+## Moonwhisper Coast
 
-Injection is **add-only**. Anything already present came from vanilla or from
-Octo's own corrections, and both are better authorities on this server than a
-Turtle export, so a future `pfQuest-octo` release wins automatically.
-
-## Moonwhisper Coast is its own map
-
-Worth explaining, because it is the part that is not just data.
-
-octowow.st reports Moonwhisper NPCs in **Winterspring** map space, since that
-is the map its data computes against. The game gives the zone a map of its own.
-So pins land correctly on Winterspring and the Moonwhisper map is blank.
-
-**pfQuest identifies a map by name, not by number.** `pfMap:GetMapID` asks the
-client what the zone is called and looks that string up in
-`pfDB["zones"]["loc"]`. A name that is not in that table has no id, so nothing
-can be stored against it and nothing drawn on it. The minimap does the same
-lookup with `GetRealZoneText()`, and then needs the zone's size in yards to
-place nodes — so registering the name alone fixes the world map and leaves the
-minimap empty.
-
-This addon registers the name under id **5642**, the zone's dimensions, and a
-second coordinate per NPC in Moonwhisper's own space, so pins show on whichever
-map you have open.
-
-The conversion between the two map spaces is not in any data file. It was
-measured in game, three positions read on both maps at once and fitted per
-axis:
+The 1.18.1 client's zone table calls it **5642**, as does the server.
+ryanmr82's scans were recorded under a made-up 5700, and are moved onto 5642.
+The site places Moonwhisper spawns on Winterspring's map; the transform onto
+Moonwhisper's own, measured in game with `tools/MoonwhisperMap` (three points
+on both maps at once, residual ~1.4e-6), is
 
 ```
 winterspring_x = 1.106478424817805 * moonwhisper_x + 14.61030867841207
 winterspring_y = 1.107254346377895 * moonwhisper_y - 35.29587145565073
 ```
 
-Residuals came back at ~1.4e-6, so the relationship is exactly linear — a
-measurement, not an approximation. `tools/MoonwhisperMap` is the addon that
-took it, kept here in case Octo adds another zone this way.
-
-Only NPCs a Moonwhisper quest actually points at get a converted coordinate;
-the two map rectangles overlap, so converting everything in Winterspring would
-scatter pins across Moonwhisper for creatures nowhere near it.
-
-## What it does not fix
-
-Of the 160 quests built from octowow.st, **119 draw a pin**. The rest are a
-limit of the source data, not of the addon:
-
-- **30** have no Start or End on their page at all — mostly repeatable item
-  turn-ins, which the site does not record a giver for.
-- **11** name a questgiver the site has no location for: 8 ids with no page at
-  all, and 3 NPCs whose pages record no spawn.
-
-Those 41 still get a name, a level and requirements in the quest log and in
-pfExtend's chain browser, which beats being unknown. They just have no pin.
+and it reproduces TKB's official positions exactly (Mhulf Nighthorn: 67.29,
+41.71). The minimap size is Winterspring's scaled by it, `{7856, 5241}`; TKB
+ships those two numbers swapped, which would put every minimap node in the
+wrong spot.
 
 ## Rebuilding
 
-Needs `lua` and `python3`. From your `AddOns` directory:
+Needs `python3`, `lua` (5.1+), `curl` and `git`. Clone the three source
+databases next to this repository (`tkb-turtle`, `ryanmr82-turtle`,
+`paokkerkir-octo`), then:
 
 ```bash
-lua pfQuest-octo-plus/tools/dump_known.lua          # what pfQuest already resolves
-python pfQuest-octo-plus/tools/parse_octo.py plan   # -> fetch.txt
+python tools/octodb.py run          # inventory the server (first run ~11 h; later runs refresh what is older than a week)
+python tools/build.py               # resolve everything, write db/, init/, patchtable.lua, the .toc and BUILD.md
+python tools/octodb.py refs --extra ../build-cache/unverified.txt   # if build.py lists unchecked ids
+lua tools/test_build.lua <pfQuest dir> ../build-cache               # load it the way the client does
+python tools/check.py               # compare it with the server
 ```
 
-Fetching is a separate program on purpose — `tools/scrape.py.patch` applies to
-`pfExtend/questGaindb/scrape.py`, which owns the site session and does no
-parsing, while `parse_octo.py` does all the parsing and never touches the
-network. A parser bug then costs a re-parse rather than another crawl.
+`octodb.py selftest` checks the page parsers against real pages in
+`tools/fixtures`. `BUILD.md` records every decision the build made and the
+source revisions it used.
 
-Alternate `plan` and `scrape.py fetchlist` until `plan` reports nothing left —
-about three rounds, because the ids are *inside* the pages: a quest names its
-questgiver, an item names what drops it. Then:
+### Why it is built this way
 
-```bash
-python pfQuest-octo-plus/tools/parse_octo.py build
-lua pfQuest-octo-plus/tools/test_bundle.lua
-```
+Version 1 missed quests, and each rule in `octodb.py` and `build.py` answers
+one way it did:
 
-### Tests
+1. It found quests through the site's quest **menu**, which links 107
+   categories. The site files quests under every zone and subzone it has
+   (Northshire Valley, Deathknell, Tel'Abim…); 182 hold quests.
+2. It only fetched quests no database had, and **added** them — never
+   replacing anything, so every quest pfQuest-octo had kept its 1.17.2 data.
+3. It took a quest's start, end and objective **text**, but not its objective
+   targets or prerequisites — so Moonwhisper's quests were listed and drew no
+   objective pins.
+4. It never recorded what the server **lacks**, so 110 Turtle-only quests
+   shipped and could show as available.
+5. Its scraper lived inside a git addon that OctoLauncher's "Update all"
+   resets.
+6. It was a one-off; the server adds quests every week.
 
-```bash
-lua pfQuest-octo-plus/tools/test_bundle.lua    # the package on its own
-python pfQuest-octo-plus/tools/parse_octo.py selftest   # parsers vs cached pages
-```
-
-One trap the tests exist to catch: **unit coordinates must be four values**,
-`{x, y, zone, respawn}`. pfQuest does `respawn > 0` with no nil check, so a
-three-value tuple throws inside the loop that builds *all* of the map's nodes
-— the result is a completely blank map, which points nowhere near the cause.
-
-The checks run on the **generated** tables rather than the merged database,
-because injection is add-only: a malformed entry for a unit pfQuest already
-knows never gets installed, and a check against the merged tables then reads
-pfQuest's own correct entry and passes while the bug sits in the file.
-
-## Note on locales
-
-Only **enUS** is supported, as upstream states. `db/esES` and `db/ptBR` ship
-with `pfQuest-octo` but its TOC never loads them — they are vestigial from
-the Turtle export it derives from — so they are dropped here. That is 12MB
-of the download that no client could have used. `ruRU` and `zhCN` are loaded
-upstream and are kept.
+Two more found while building v2: the site draws NPCs near a zone border on
+the **neighbouring** zone's map (705 of 782 disagreements checked), so
+positions come from the exports and only fall back to the site; and its
+"React" letters are coloured per side — only the green ones mean friendly.
 
 ## Credits
 
-- **[Shagu](https://github.com/shagu)** — pfQuest itself.
-- **[paokkerkir](https://github.com/paokkerkir/pfQuest-octo)** — the OctoWoW
-  database extension this is built on, with Gurky and contributors Antealis,
-  HumbleKagu, KasVital, Haaxor1689, IcemanHHW and fatpowaranga.
-- The Turtle WoW team, whose database export the Octo data derives from.
+- **[Shagu](https://github.com/shagu)** — pfQuest and pfQuest-turtle.
+- **[txtsd / The-Kludge-Bureau](https://github.com/The-Kludge-Bureau)** — the
+  maintained pfQuest 8 and the 1.18.1 database.
+- **[paokkerkir](https://github.com/paokkerkir/pfQuest-octo)** — pfQuest-octo,
+  with Gurky and contributors Antealis, HumbleKagu, KasVital, Haaxor1689,
+  IcemanHHW and fatpowaranga.
+- **[ryanmr82](https://github.com/ryanmr82/pfQuest-turtle)** and the Hydra
+  guild — Moonwhisper Coast from in-game scans.
+- The Turtle WoW team, whose database export all of this derives from, and
+  the OctoWoW team, whose database is the reference.
 
 MIT, as upstream. See `LICENSE`.

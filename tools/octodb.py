@@ -483,9 +483,16 @@ def parse_spawned(page, kind):
     lvl = re.search(r"Level\s*:\s*(\d+)(?:\s*-\s*(\d+))?", text)
     if lvl:
         out["level"] = [int(lvl.group(1)), int(lvl.group(2) or lvl.group(1))]
-    react = re.search(r"React\s*:\s*([AH\s]+?)(?:Faction|Health|Class|$)", text)
+    #[[ "React: A H" shows both letters always; the colour says how each side
+    #   stands -- q2 friendly, q neutral, q7 hostile. pfQuest's "fac" lists
+    #   the sides an NPC is FRIENDLY to, so only q2 letters count. Taking every
+    #   letter shown made hostile mobs friendly to both factions. ]]
+    react = re.search(r"React\s*:(.*?)</div>", page, re.S)
     if react:
-        out["react"] = "".join(c for c in "AH" if c in react.group(1)) or None
+        friendly = [side for cls, side in
+                    re.findall(r'<span\s+class="(q\d*)">\s*([AH])\s*</span>', react.group(1))
+                    if cls == "q2"]
+        out["react"] = "".join(s for s in "AH" if s in friendly)
     return out
 
 
@@ -723,11 +730,18 @@ class Crawler:
             want[kind] -= done
         return want
 
-    def refs(self, limit=None):
+    def refs(self, limit=None, extra=None):
+        """extra: {kind: ids} named by someone else -- the build lists every id
+        its databases reference that no quest page here pointed at, so the
+        server gets asked about those too."""
         rounds = 0
         while True:
             rounds += 1
             want = self.referenced()
+            for kind, ids in (extra or {}).items():
+                done = set(self.store.ids("SELECT id FROM %s" % TABLE[kind]))
+                done |= set(self.store.ids("SELECT id FROM absent WHERE kind=?", kind))
+                want[kind] |= set(ids) - done
             total = sum(len(v) for v in want.values())
             if not total:
                 break
@@ -892,13 +906,17 @@ def selftest():
     n = parse_spawned(fx("npc_62976.html.gz"), "npc")
     check("npc name", n and n["name"], "Mhulf Nighthorn")
     check("npc location keeps its zone", n and n["locations"], [[618, 89.06, 10.89]])
-    check("npc reaction", n and n.get("react"), "AH")
+    #[[ Hostile to the Alliance, friendly to the Horde -- the page colours the
+    #   letters q7 and q2, and TKB's export says "H" too. The first parser read
+    #   "AH" here, as it did for every hostile mob. ]]
+    check("npc reaction", n and n.get("react"), "H")
     #[[ The site lists 4 Kobold Vermin where pfQuest's export has 33. Its NPC
     #   pages under-report spawns, which is why a build takes positions from
     #   the exports first and from here only for NPCs no export has. ]]
     n = parse_spawned(fx("npc_6.html.gz"), "npc")
     check("kobold vermin as the site lists them", n and [len(n["locations"]), {l[0] for l in n["locations"]}],
           [4, {12}])
+    check("a mob is friendly to no one", n and n.get("react"), "")
     check("npc page is not an object", parse_spawned(fx("npc_6.html.gz"), "object"), None)
 
     it = parse_item(fx("item_42385.html.gz"))
@@ -926,6 +944,8 @@ def main():
     ap.add_argument("--full", action="store_true",
                     help="also check every Blizzard quest id one by one (~10k requests)")
     ap.add_argument("--limit", type=int, default=None, help="stop after this many pages")
+    ap.add_argument("--extra", action="append", default=[],
+                    help="refs: also read the kind=id pairs in this file (build.py writes one)")
     ap.add_argument("--out", default=None, help="export file (default: <data>/octodb.json)")
     args = ap.parse_args()
 
@@ -953,7 +973,13 @@ def main():
         if args.command in ("run", "sweep"):
             crawler.sweep_ids(known_quest_ids(args.known), args.full)
         if args.command in ("run", "refs"):
-            crawler.refs(args.limit)
+            extra = {}
+            for path in args.extra:
+                for line in open(path, encoding="utf-8"):
+                    kind, _, ident = line.strip().partition("=")
+                    if kind in TABLE and ident.isdigit():
+                        extra.setdefault(kind, set()).add(int(ident))
+            crawler.refs(args.limit, extra)
     except Blocked as e:
         store.commit()
         print("\nstopped: %s\nEverything fetched so far is kept; run the same command "
