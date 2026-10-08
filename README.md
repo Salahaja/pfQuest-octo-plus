@@ -29,7 +29,7 @@ from the published databases:
 | source | used for |
 |---|---|
 | [The-Kludge-Bureau/pfQuest-turtle](https://github.com/The-Kludge-Bureau/pfQuest-turtle) | Turtle's 1.18.1 export — the client OctoWoW runs. First choice for every quest, NPC, object and item. |
-| [ryanmr82/pfQuest-turtle](https://github.com/ryanmr82/pfQuest-turtle) | OctoWoW's Moonwhisper Coast from in-game scans: objectives and spawns. |
+| [ryanmr82/pfQuest-turtle](https://github.com/ryanmr82/pfQuest-turtle) | A fork of shagu's Turtle export, plus OctoWoW's Moonwhisper Coast auto-built by the Hydra guild from players' in-game captures (spawns, givers, turn-ins, loot) and hand fixes. |
 | [paokkerkir/pfQuest-octo](https://github.com/paokkerkir/pfQuest-octo) | Hand-made objective fixes (NPCs you talk to, objects you use) the exports never extracted. |
 | pfQuest itself | Everything above leaves out. |
 
@@ -45,8 +45,17 @@ Compared with the server (`python tools/check.py`):
 | level / required level differs | 11 / 17 | 10 / 15 | 10 / 16 | 11 / 23 | **0 / 0** |
 | race / class mask differs | 4 / 0 | 22 / 1 | 1 / 288 | 5 / 0 | **0 / 0** |
 | start cannot draw a pin | 111 | 118 | 214 | 125 | **106** |
+| no start on the map at all | 332 | 369 | 493 | — | **352** |
 
-Checked 2026-10-08 against the server inventory of the same day.
+Checked 2026-10-08 against the server inventory of the same day. "Start cannot
+draw a pin" counts quests whose page names a giver; "no start on the map" counts
+every server quest pfQuest can draw no start for. pfQuest-octo's lower figure
+is over its 6,137 server quests, and the 23 it draws that this does not are 19
+`[Deprecated]` quests given a giver by hand, 2 hand-pinned to a poster, and the
+AQ officers. Everything ryanmr82 draws and this does not is the 16 AQ officer
+quests; its 110 quests the server lacks are unreleased raid rewards (Naxxramas
+rings, Karazhan and Emerald Sanctum set pieces), Scourge Invasion turn-ins and
+test or GM quests.
 
 ## What it cannot fix
 

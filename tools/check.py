@@ -26,7 +26,8 @@ import octodb  # noqa: E402
 BUCKET = {"npc": "U", "object": "O", "item": "I"}
 ROWS = ["missing", "not on the server", "start differs", "end differs",
         "objective target missing", "level differs", "required level differs",
-        "race mask differs", "class mask differs", "start cannot pin"]
+        "race mask differs", "class mask differs", "start cannot pin",
+        "no start on the map"]
 
 
 def ids(part, letter):
@@ -40,8 +41,19 @@ def check(dump, inv):
     placed = {letter: {int(k) for k, v in dump[kind]["data"].items()
                        if isinstance(v, dict) and v.get("coords")}
               for letter, kind in (("U", "units"), ("O", "objects"))}
+    items = dump["items"]["data"]
     c = collections.Counter()
     examples = collections.defaultdict(list)
+
+    def drawable(start):
+        if any(i in placed[l] for l in ("U", "O") for i in ids(start, l)):
+            return True
+        for it in ids(start, "I"):
+            src = items.get(str(it)) or {}
+            if any(int(i) in placed["U" if l != "O" else "O"]
+                   for l in ("U", "O", "V") for i in (src.get(l) or {})):
+                return True
+        return False
 
     def hit(key, qid):
         c[key] += 1
@@ -73,6 +85,11 @@ def check(dump, inv):
         if st and st[0][0] in ("npc", "object"):
             if not any(i in placed[l] for l in ("U", "O") for i in ids(q.get("start"), l)):
                 hit("start cannot pin", qid)
+        # whatever the server names: can pfQuest draw a start at all? (the
+        # row above skips quests whose page names no giver -- where the site
+        # lacks the NPC, which is exactly where givers went missing before)
+        if not drawable(q.get("start")):
+            hit("no start on the map", qid)
     for qid in set(quests) - set(site):
         hit("not on the server", qid)
     return len(quests), c, examples

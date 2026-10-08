@@ -87,7 +87,7 @@ HIDE_UNITS = set(range(15761, 15769))
 #   the 32-bit client's address space is the limit that crashes it. ]]
 LOCALES = ["ruRU", "zhCN"]
 
-VERSION = "2.0.0"
+VERSION = "2.0.1"
 DBURL = "https://octowow.st/db/?quest="
 
 
@@ -481,11 +481,18 @@ class Build:
                 part = rec.get(which)
                 if not isinstance(part, dict):
                     continue
+                #[[ A start or end the quest's page leaves blank is the same gap
+                #   seen from the other side: the quest exists, so someone hands
+                #   it out, and an empty NPC page proves nothing. The Harborage's
+                #   draenei (Magtoor 1776, Masat T'andr 11874, 91781, 91782...)
+                #   come back empty, and dropping them cost 18 quests their
+                #   giver. Removal shows as the page naming someone else. ]]
+                blank = which != "obj" and not s.get(which)
                 for letter in list(part):
                     if letter not in gone or not isinstance(part[letter], list):
                         continue
                     keep = [i for i in part[letter]
-                            if i not in gone[letter] or (letter, i) in named]
+                            if i not in gone[letter] or (letter, i) in named or blank]
                     if len(keep) != len(part[letter]):
                         self.bump("reference dropped: the server has no such %s"
                                   % {"U": "npc", "O": "object", "I": "item"}[letter],

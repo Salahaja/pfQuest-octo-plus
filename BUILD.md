@@ -1,6 +1,6 @@
 # Build report
 
-Built 2026-10-08 17:19 from the server inventory exported 2026-10-08 17:19:03.
+Built 2026-10-08 17:46 from the server inventory exported 2026-10-08 17:46:40.
 
 | source | revision |
 |---|---|
@@ -46,7 +46,7 @@ Built 2026-10-08 17:19 from the server inventory exported 2026-10-08 17:19:03.
 | quest starts/ends taken from the server's npc and object pages | 108 |
 | race mask corrected | 4 |
 | reference dropped: the server has no such item | 6 |
-| reference dropped: the server has no such npc | 47 |
+| reference dropped: the server has no such npc | 6 |
 | required level corrected | 17 |
 | start corrected from the server | 7 |
 | start taken from ryan (the server names none) | 15 |
