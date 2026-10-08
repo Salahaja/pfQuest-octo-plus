@@ -56,8 +56,13 @@ Checked 2026-10-08 against the server inventory of the same day.
   the 15 Ahn'Qiraj war effort officer quests — the officers are in the
   server's database but not in the world until AQ opens (2027 on OctoWoW).
   Their quests are listed; they just have no pin.
-- **20 quests that start from an item nothing drops** — a reward from
-  an earlier quest, or something crafted.
+- **141 of the 255 quests that start from an item.** The other 114 start
+  from a drop or a vendor item and pin whatever drops or sells it. For these
+  141, neither the server nor any database knows a place: 72 starting items
+  come out of another item (Sayge's fortunes, the Cenarion Circle's task
+  briefings — only one of those containers drops anywhere), 22 are crafted
+  or combined, 16 are rewards of an earlier quest, 13 have no source
+  recorded, and the rest drop from something with no position.
 - **Objectives the server's pages leave out.** Some quests complete by a
   script or an area event (Trial of the Lake's Shrine Bauble); those come
   from the exports, where they exist at all.
