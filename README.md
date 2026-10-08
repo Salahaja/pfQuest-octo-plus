@@ -136,6 +136,13 @@ the **neighbouring** zone's map (705 of 782 disagreements checked), so
 positions come from the exports and only fall back to the site; and its
 "React" letters are coloured per side — only the green ones mean friendly.
 
+And one found in 2.0.1: the site's **NPC list has holes**. Moro'gai Village
+and the Harborage's draenei (Magtoor, Masat T'andr and their Turtle
+neighbours) come back as empty pages, so the quest pages name no giver for
+their quests. An empty NPC page proves nothing on its own; a giver is dropped
+only when the quest's page names someone else. 2.0.0 dropped those givers,
+which cost 18 quests their start pin.
+
 ## Credits
 
 - **[Shagu](https://github.com/shagu)** — pfQuest and pfQuest-turtle.
