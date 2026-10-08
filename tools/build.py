@@ -214,6 +214,52 @@ def site_text(t):
              .replace("<class>", "$C").replace("<Name>", "$N"))
 
 
+class Maps:
+    """The client's own map table (DBFilesClient\\WorldMapArea.dbc, saved in
+    tools/data/worldmaparea.json): every map's extents in world coordinates,
+    which is what converts a position from one map to another exactly. It
+    confirms the in-game measurement -- Moonwhisper is 7856 x 5241 yards and
+    the Winterspring transform below matches it to six digits."""
+
+    CONTINENTS = {"Kalimdor": 1, "Azeroth": 0, "Eastern Kingdoms": 0}
+
+    def __init__(self, path):
+        with open(path, encoding="utf-8") as f:
+            rows = json.load(f)["rows"]
+        self.continent = {r["map"]: r for r in rows if r["area"] == 0 and r["left"] != r["right"]
+                          and r["name"] in ("Kalimdor", "Azeroth")}
+        self.zone = {r["area"]: r for r in rows if r["area"] and r["left"] != r["right"]}
+
+    @staticmethod
+    def to_world(r, x, y):
+        return r["left"] - x / 100 * (r["left"] - r["right"]), r["top"] - y / 100 * (r["top"] - r["bottom"])
+
+    @staticmethod
+    def from_world(r, wy, wx):
+        x = (r["left"] - wy) / (r["left"] - r["right"]) * 100
+        y = (r["top"] - wx) / (r["top"] - r["bottom"]) * 100
+        if 0 <= x <= 100 and 0 <= y <= 100:
+            return round(x, 2), round(y, 2)
+        return None
+
+    def continent_to_zone(self, continent, x, y, area):
+        """A whole-continent position, on zone `area`'s map; None if off it."""
+        c = self.continent.get(self.CONTINENTS.get(continent))
+        z = self.zone.get(area)
+        if not c or not z or z["map"] != c["map"]:
+            return None
+        return self.from_world(z, *self.to_world(c, x, y))
+
+    def zones_containing(self, continent, x, y, custom_only=True):
+        c = self.continent.get(self.CONTINENTS.get(continent))
+        if not c:
+            return []
+        wy, wx = self.to_world(c, x, y)
+        return [a for a, z in self.zone.items()
+                if z["map"] == c["map"] and (a >= 5000 or not custom_only)
+                and self.from_world(z, wy, wx)]
+
+
 def to_moonwhisper(x, y):
     mx, my = (x - MW_BX) / MW_AX, (y - MW_BY) / MW_AY
     if 0 <= mx <= 100 and 0 <= my <= 100:
@@ -240,12 +286,28 @@ def site_positions(entity, moonwhisper):
 # ------------------------------------------------------------------ resolve
 
 class Build:
-    def __init__(self, src, inv):
+    def __init__(self, src, inv, maps):
         self.src = src
+        self.maps = maps
         self.site = {int(k): v for k, v in inv["quests"].items() if v}
         self.site_npc = {int(k): v for k, v in inv["npcs"].items()}
         self.site_obj = {int(k): v for k, v in inv["objects"].items()}
         self.site_item = {int(k): v for k, v in inv["items"].items()}
+        #[[ The server's NPC and object pages list the quests each one starts
+        #   and ends. Where a quest's own page names no giver, that list is
+        #   the server's word on it all the same. ]]
+        self.from_npc_pages = 0
+        reverse = {}
+        for table, kind in ((self.site_npc, "npc"), (self.site_obj, "object")):
+            for ident, e in table.items():
+                for which, field in (("starts", "start"), ("ends", "end")):
+                    for qid in e.get(which, []):
+                        reverse.setdefault((qid, field), []).append([kind, ident])
+        for (qid, field), named in reverse.items():
+            s = self.site.get(qid)
+            if s is not None and not s.get(field):
+                s[field] = sorted(named)
+                self.from_npc_pages += 1
         self.absent = set(inv["absent"].get("quest", []))
         self.absent_of = {k: set(inv["absent"].get(k, [])) for k in ("npc", "object", "item")}
         self.stats = {}
@@ -446,6 +508,49 @@ class Build:
                     ref[letter].update(bucket_ids(rec.get(which), letter))
         return ref
 
+    def repair(self, rec, continent, kind):
+        """A database position that is the site's whole-continent position
+        with a zone id stuck on (TKB did this for 19 spawns -- 12 on
+        Moonwhisper, the rest in Grim Reaches and Gilneas) is converted onto
+        that zone's map for real, through the client's map table."""
+        coords = rec.get("coords")
+        if not coords:
+            return rec
+        fixed, changed = [], False
+        for c in coords:
+            raw = next((p for p in continent
+                        if abs(p[1] - c[0]) < 0.15 and abs(p[2] - c[1]) < 0.15), None)
+            if raw is None:
+                fixed.append(c)
+                continue
+            changed = True
+            conv = self.maps.continent_to_zone(raw[0], raw[1], raw[2], c[2])
+            if conv:
+                fixed.append([conv[0], conv[1], c[2], c[3]])
+                self.bump("%s position converted from the continent map" % kind)
+            else:
+                self.bump("%s position dropped: continent position off its zone's map" % kind)
+        if not changed:
+            return rec
+        rec = copy.deepcopy(rec)
+        rec["coords"] = fixed
+        return rec
+
+    def continent_positions(self, site_e, moonwhisper):
+        """The site's whole-continent positions, on every custom zone's map
+        that contains them -- or only Moonwhisper's, for what a Moonwhisper
+        quest uses."""
+        out = []
+        for continent, x, y in site_e.get("continent", []):
+            zones = self.maps.zones_containing(continent, x, y)
+            if moonwhisper and MW_ZONE in zones:
+                zones = [MW_ZONE]
+            for z in zones:
+                conv = self.maps.continent_to_zone(continent, x, y, z)
+                if conv:
+                    out.append([conv[0], conv[1], z, 0])
+        return out
+
     def spawned(self, kind, letter, site_table, ref):
         ids = set()
         for n in ORDER:
@@ -455,8 +560,10 @@ class Build:
         for ident in sorted(ids):
             cands = [(n, self.src[n][kind][ident]) for n in ORDER
                      if isinstance(self.src[n][kind].get(ident), dict)]
-            placed = [(n, r) for n, r in cands if r.get("coords")]
             site_e = site_table.get(ident)
+            if site_e and site_e.get("continent"):
+                cands = [(n, self.repair(r, site_e["continent"], kind)) for n, r in cands]
+            placed = [(n, r) for n, r in cands if r.get("coords")]
             chosen = None
             #[[ Positions come from the exports whenever any has one. The
             #   site's are a last resort: it draws an NPC near a zone border on
@@ -467,6 +574,7 @@ class Build:
             #   dungeon layouts and patrols -- none a real move. ]]
             if not placed and ident in ref[letter] and site_e:
                 sitepos = site_positions(site_e, ident in self.mw_entities[letter])
+                sitepos += self.continent_positions(site_e, ident in self.mw_entities[letter])
                 if sitepos:
                     rec = copy.deepcopy((cands or [(None, {})])[0][1])
                     rec["coords"] = sitepos
@@ -777,7 +885,8 @@ def main():
     os.makedirs(cache, exist_ok=True)
     src, revs = load_sources(args.work, cache, args.pfquest)
     stamp = time.strftime("%Y-%m-%d %H:%M")
-    b = Build(src, inv)
+    b = Build(src, inv, Maps(os.path.join(HERE, "data", "worldmaparea.json")))
+    b.bump("quest starts/ends taken from the server's npc and object pages", b.from_npc_pages)
     b.run()
     emit(b, args.work, revs, stamp)
     # what tools/test_build.lua checks the merged result against

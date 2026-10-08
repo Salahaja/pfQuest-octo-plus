@@ -470,15 +470,32 @@ def parse_spawned(page, kind):
     ident = page_id(page, kind)
     if ident is None:
         return None
-    out = {"id": ident, "name": _name(page), "locations": []}
+    out = {"id": ident, "name": _name(page), "locations": [], "continent": []}
     seen = set()
     for m in MAPPER_RE.finditer(page):
         zone = int(m.group(1))
+        #[[ Zone 0 is the site saying "no zone of mine contains this": the
+        #   position is on the whole-continent map, and the link names which
+        #   continent. That is every Moonwhisper Coast spawn beyond
+        #   Winterspring's map -- the site's zone table has no Moonwhisper --
+        #   and TKB's export copied those numbers as if they were Moonwhisper
+        #   map positions. Kept apart, with the continent, to be converted. ]]
+        label = re.search(r'>([^<>]+)</a>', page[m.end():m.end() + 400])
         for x, y in COORD_RE.findall(m.group(2)):
             key = (zone, round(float(x), 2), round(float(y), 2))
-            if key not in seen:
-                seen.add(key)
+            if key in seen:
+                continue
+            seen.add(key)
+            if zone == 0:
+                out["continent"].append([label.group(1).strip() if label else None, key[1], key[2]])
+            else:
                 out["locations"].append(list(key))
+    # the quests this NPC or object hands out and takes back -- the way to a
+    # giver when the quest's own page names none
+    for which in ("starts", "ends"):
+        lv = re.search(r"new Listview\(\{[^}]*?id:\s*'%s'.*?data:\s*(\[.*?\])\}\);" % which, page, re.S)
+        if lv:
+            out[which] = sorted({int(i) for i in re.findall(r"\{id:\s*'?(\d+)'?", lv.group(1))})
     text = _text(re.sub(r"<script.*?</script>", " ", page, flags=re.S))
     lvl = re.search(r"Level\s*:\s*(\d+)(?:\s*-\s*(\d+))?", text)
     if lvl:
@@ -918,6 +935,15 @@ def selftest():
           [4, {12}])
     check("a mob is friendly to no one", n and n.get("react"), "")
     check("npc page is not an object", parse_spawned(fx("npc_6.html.gz"), "object"), None)
+
+    #[[ Zarazar Sagewind stands at Narvalis Point, beyond Winterspring's map:
+    #   the site gives the Kalimdor continent position, which the client's map
+    #   table turns into 57.45, 28.27 on Moonwhisper's. ]]
+    n = parse_spawned(fx("npc_62902.html.gz"), "npc")
+    check("continent position kept apart", n and (n["locations"], n["continent"]),
+          ([], [["Kalimdor", 62.32, 16.62]]))
+    check("quests the npc starts", n and n.get("starts"), [42092])
+    check("quests the npc ends", n and n.get("ends"), [42092])
 
     it = parse_item(fx("item_42385.html.gz"))
     check("item drop source", it and it["npc"], {"63067": 100.0})

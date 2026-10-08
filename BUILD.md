@@ -1,6 +1,6 @@
 # Build report
 
-Built 2026-10-08 17:02 from the server inventory exported 2026-10-08 17:02:53.
+Built 2026-10-08 17:19 from the server inventory exported 2026-10-08 17:19:03.
 
 | source | revision |
 |---|---|
@@ -22,7 +22,7 @@ Built 2026-10-08 17:02 from the server inventory exported 2026-10-08 17:02:53.
 |---|---|
 | class mask corrected | 10 |
 | end corrected from the server | 37 |
-| end taken from ryan (the server names none) | 47 |
+| end taken from ryan (the server names none) | 18 |
 | item source added: base | 152 |
 | item source added: octo | 32 |
 | item source added: ryan | 114 |
@@ -30,7 +30,7 @@ Built 2026-10-08 17:02 from the server inventory exported 2026-10-08 17:02:53.
 | level corrected | 10 |
 | objective added: base | 118 |
 | objective added: octo | 39 |
-| objective added: ryan | 426 |
+| objective added: ryan | 423 |
 | objective added: server | 58 |
 | objects from base | 78 |
 | objects from octo | 9 |
@@ -38,11 +38,12 @@ Built 2026-10-08 17:02 from the server inventory exported 2026-10-08 17:02:53.
 | objects from server | 1 |
 | objects from tkb | 21146 |
 | objects placed by the server (no source had a position) | 1 |
-| pre taken from ryan (the server names none) | 170 |
+| pre taken from ryan (the server names none) | 162 |
 | pre taken from tkb (the server names none) | 8 |
-| quest base: ryan | 678 |
+| quest base: ryan | 707 |
 | quest base: server only | 5 |
-| quest base: tkb | 5869 |
+| quest base: tkb | 5840 |
+| quest starts/ends taken from the server's npc and object pages | 108 |
 | race mask corrected | 4 |
 | reference dropped: the server has no such item | 6 |
 | reference dropped: the server has no such npc | 47 |
@@ -57,3 +58,4 @@ Built 2026-10-08 17:02 from the server inventory exported 2026-10-08 17:02:53.
 | units from tkb | 14058 |
 | units hidden until their event opens | 8 |
 | units placed by the server (no source had a position) | 5 |
+| units position converted from the continent map | 21 |
