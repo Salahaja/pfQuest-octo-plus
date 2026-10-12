@@ -11,6 +11,7 @@ walked back through the prerequisites, so it follows the server's.
 """
 
 import json
+import os
 import statistics
 
 # name, kind (d dungeon / r raid), zones the server files quests under,
@@ -145,12 +146,35 @@ def build(b):
     return out
 
 
+def dungeon_maps():
+    """Every map that is not a continent's, from the client's own map table
+    (tools/data/worldmaparea.json): its file name, which GetMapInfo() returns
+    when it is open; the map id and floor SetMapZoom(map, floor) opens it
+    with; and the zone pfQuest's positions on it are filed under. A map with
+    floors (Scarlet Monastery has four) lists them in row order."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(here, "data", "worldmaparea.json"), encoding="utf-8") as f:
+        rows = json.load(f)["rows"]
+    out, floors = [], {}
+    for r in sorted(rows, key=lambda r: (r["map"], r["id"])):
+        if r["map"] in (0, 1) or r["left"] == r["right"]:
+            continue
+        floors[r["map"]] = floors.get(r["map"], 0) + 1
+        out.append({"name": r["name"], "map": r["map"], "floor": floors[r["map"]], "zone": r["area"]})
+    return out
+
+
 def write(path, insts, header):
     with open(path, "w", encoding="utf-8", newline="\n") as f:
         f.write(header)
-        f.write("-- Read by instances.lua.\n\npfQuestOcto_Instances = {\n")
+        f.write("-- Read by instances.lua and maps.lua.\n\npfQuestOcto_Instances = {\n")
         for i in insts:
             f.write('  { name = %s, kind = "%s", lvl = %d,\n    quests = {%s},\n    key = {%s} },\n'
                     % (json.dumps(i["name"]), i["kind"], i["lvl"],
                        ",".join(map(str, i["quests"])), ",".join(map(str, i["key"]))))
+        f.write("}\n\n-- the client's dungeon maps: file name, SetMapZoom(map, floor), zone\n"
+                "pfQuestOcto_DungeonMaps = {\n")
+        for m in dungeon_maps():
+            f.write('  { name = "%s", map = %d, floor = %d, zone = %d },\n'
+                    % (m["name"], m["map"], m["floor"], m["zone"]))
         f.write("}\n")

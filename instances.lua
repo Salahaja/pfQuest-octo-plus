@@ -464,13 +464,57 @@ end
 local rightscroll = scrollframe("pfQuestOctoInstancesRight", 196, 570, ROWS, function() Redraw() end)
 local questbuttons = {}
 
-local function showquest(id)
+-- where a quest's start (or end) stands: every spot, and a name
+local function where(id, part)
+  local p = quests[id] and quests[id][part]
+  if not p then return nil end
+  for _, ident in pairs(p.U or {}) do
+    local rec = units.data[ident]
+    if rec and rec.coords and rec.coords[1] then
+      return rec.coords, units.loc[ident]
+    end
+  end
+  for _, ident in pairs(p.O or {}) do
+    local rec = objects.data[ident]
+    if rec and rec.coords and rec.coords[1] then
+      return rec.coords, objects.loc[ident]
+    end
+  end
+  return nil
+end
+
+local function points(coords, zone)
+  local out = {}
+  for _, c in pairs(coords) do
+    if c[3] == zone then table.insert(out, { c[1], c[2] }) end
+  end
+  return out
+end
+
+-- Show a quest: pfQuest's pins, the map they are on, and a flashing marker
+-- for ten seconds on whoever to see -- the giver, or once the quest is in
+-- the log the one to speak to or turn in to, which pfQuest may not pin.
+local function showquest(id, st)
   if IsShiftKeyDown() and pfQuestCompat and pfQuestCompat.InsertQuestLink then
     pfQuestCompat.InsertQuestLink(id)
     return
   end
   local maps = pfDatabase:SearchQuestID(id, { ["addon"] = "PFDB" })
-  pfMap:ShowMapID(pfDatabase:GetBestMap(maps))
+  local M = pfQuestOctoMaps
+  local inlog = st == "active"
+  local coords, who = where(id, inlog and "end" or "start")
+  if not M or not coords then
+    pfMap:ShowMapID(pfDatabase:GetBestMap(maps))
+    return
+  end
+  local label = (who or "") .. (inlog and "  (turn in)" or "  (quest giver)")
+  local zone = coords[1][3]
+  if inlog and quests[id].obj then
+    -- objectives still to do: their map, and the marker if it is there too
+    zone = pfDatabase:GetBestMap(maps) or zone
+  end
+  M.Open(zone)
+  M.Flash(points(coords, zone), label)
 end
 
 local function QuestClick()
@@ -480,7 +524,7 @@ local function QuestClick()
     expanded[row.key] = not expanded[row.key]
     Redraw()
   elseif row.kind == "step" then
-    showquest(row.step.id)
+    showquest(row.step.id, row.step.state)
   end
 end
 
@@ -682,7 +726,12 @@ local function toggle()
 end
 
 SLASH_PFQUESTOCTOINST1, SLASH_PFQUESTOCTOINST2 = "/instq", "/instancequests"
-SlashCmdList["PFQUESTOCTOINST"] = toggle
+SlashCmdList["PFQUESTOCTOINST"] = function(input)
+  if string.lower(input or "") == "maptest" and pfQuestOctoMaps then
+    return pfQuestOctoMaps.MapTest()
+  end
+  toggle()
+end
 
 local pfdb = SlashCmdList["PFDB"]
 if pfdb then

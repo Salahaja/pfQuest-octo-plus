@@ -159,7 +159,8 @@ for _, z in ipairs({ 5600, 5098, 5550, 5132, 5140 }) do
 end
 
 -- the instance quest window: its lists point at real quests, and it loads
-if not toc:find('db\\instances-turtle.lua', 1, true) or not toc:find('\ninstances.lua', 1, true) then
+if not toc:find('db\\instances-turtle.lua', 1, true) or not toc:find('\nmaps.lua', 1, true)
+	or not toc:find('\ninstances.lua', 1, true) or not toc:find('pfQuestOcto_MapTest', 1, true) then
 	fail('the .toc does not load the instance quest window')
 end
 run('db/instances-turtle.lua')
@@ -191,7 +192,11 @@ end
 UIParent, UISpecialFrames = frame(), {}
 getglobal = function() return frame() end
 SlashCmdList.PFDB = noop
-local ok, err = pcall(run, 'instances.lua')
+WorldMapFrame, WorldMapButton, WorldMapTooltip = frame(), frame(), frame()
+local ok, err = pcall(run, 'maps.lua')
+if not ok then fail('maps.lua errors at load: %s', err) end
+if not (pfQuestOctoMaps and pfQuestOctoMaps.byname.TheDeadmines) then fail('maps.lua does not know TheDeadmines') end
+ok, err = pcall(run, 'instances.lua')
 if not ok then fail('instances.lua errors at load: %s', err) end
 if not SlashCmdList.PFQUESTOCTOINST then fail('/instq is not registered') end
 print(string.format('  %d instances listed', insts))

@@ -42,6 +42,7 @@ frame = function()
 		if k:match('^Create') then return function() return frame() end end
 		if k == 'GetName' then return function() return 'StubFrame' end end
 		if k == 'IsShown' then return function() return true end end
+		if k == 'GetFrameLevel' or k == 'GetWidth' or k == 'GetHeight' then return function() return 100 end end
 		-- methods only; a field nobody set is nil, as on a real frame
 		if k:match('^%u') then return noop end
 	end })
@@ -62,13 +63,32 @@ pfQuestOctoInstancesRightScrollBar = frame()
 pfDatabase = { GetBitByRace = function() return RACEBIT end, GetBitByClass = function() return 256 end,
 	GetHexDifficultyColor = function() return '' end, SearchQuestID = function() return {} end,
 	GetBestMap = noop, QueryServer = noop }
-pfMap = { GetMapNameByID = function(_, z) return 'zone' end, ShowMapID = noop }
+pfMap = { GetMapNameByID = function(_, z) return 'zone' end, ShowMapID = noop, UpdateNodes = noop,
+	GetMapID = function() return nil end, SetMapByID = noop }
+WorldMapFrame, WorldMapButton, WorldMapTooltip = frame(), frame(), frame()
+SetMapZoom, ToggleWorldMap = noop, noop
+GetMapInfo = function() return 'TheDeadmines' end
+OPENED = {}
+SetMapZoom = function(m, f) OPENED[#OPENED + 1] = m end
 pfQuest = { questlog = { [4264] = {} } }
 pfQuest_history = { [4182] = {}, [4183] = {}, [166] = {}, [40817] = {}, [8915] = {} }
 GameTooltip = setmetatable({}, { __index = function() return noop end })
 SlashCmdList = { PFDB = noop }
 for _, k in ipairs({ 'quests', 'units', 'objects', 'items', 'zones' }) do pfDB[k].loc = pfDB[k].enUS end
 run('db/instances-turtle.lua')
+-- a dungeon map with two unnamed boss icons, one where VanCleef stands
+WorldMapFrame_Update = noop
+GetNumMapLandmarks = function() return 2 end
+local marks = { { 75.7 / 100, 28.6 / 100 }, { .02, .98 } }
+GetMapLandmarkInfo = function(i) return '', '', 0, marks[i][1], marks[i][2] end
+local pois = {}
+getglobal = function(n) pois[n] = pois[n] or frame() return pois[n] end
+TOOLTIP = {}
+WorldMapTooltip = setmetatable({}, { __index = function(_, k)
+	if k == 'AddLine' then return function(_, t) TOOLTIP[#TOOLTIP + 1] = t end end
+	return noop
+end })
+run('maps.lua')
 run('instances.lua')
 
 local function each(what) local out = {} for _, h in ipairs(handlers) do if h[2] == what then out[#out + 1] = h end end return out end
@@ -112,6 +132,12 @@ for _, inst in ipairs(pfQuestOcto_Instances) do
 			if row then
 				rows = rows + 1
 				call(h)
+				-- click a quest: pins, opens a map, flashes the marker
+				if row.kind == 'step' then
+					for _, c in ipairs(each('OnClick')) do
+						if c[1] == h[1] then call(c) CLICKS = (CLICKS or 0) + 1 end
+					end
+				end
 				local ids = {}
 				if row.kind == 'group' then
 					ids[1] = row.id
@@ -136,5 +162,17 @@ for _, inst in ipairs(pfQuestOcto_Instances) do
 	end
 end
 print(('  ui (%s): %d rows looked at, %d errors, %d duplicate step names in a chain, %d other-faction quests'):format(FACTION, rows, errors, dupes, other))
+-- the marker's frame-by-frame update, and the boss icons' tooltips
+GetTime = function() return 1 end
+for _, h in ipairs(each('OnUpdate')) do call(h) end
+WorldMapFrame_Update()
+for _, h in ipairs(each('OnEnter')) do
+	if h[1] == pois.WorldMapFramePOI1 or h[1] == pois.WorldMapFramePOI2 then call(h) end
+end
+if TOOLTIP[1] ~= 'Edwin VanCleef' or TOOLTIP[2] then
+	print('  FAIL boss icon tooltips: ' .. table.concat(TOOLTIP, ', '))
+	errors = errors + 1
+end
 WINDOW_ERRORS, WINDOW_DUPES, WINDOW_OTHER, WINDOW_ROWS = errors, dupes, other, rows
+print(('  ui (%s): %d quest clicks, %d dungeon maps opened'):format(FACTION, CLICKS or 0, #OPENED))
 -- DRIVE ]==]
