@@ -104,6 +104,8 @@ end })
 run('maps.lua')
 run('panel.lua')
 run('instances.lua')
+QuestLogFrame = frame()
+run('questlog.lua')
 
 local function each(what) local out = {} for _, h in ipairs(handlers) do if h[2] == what then out[#out + 1] = h end end return out end
 local errors, rows, dupes, other, seen = 0, 0, 0, 0, {}
@@ -218,6 +220,15 @@ end
 if pinned < 10 or skullspots < 8 then
 	print(('  FAIL dungeon panel: %d pins, %d skull spots'):format(pinned, skullspots))
 	errors = errors + 1
+end
+-- the quest log's Show: the dungeon panel for Scarab Shells, the turn-in
+-- flash for a complete quest, the objectives for one that is not
+GetPlayerMapPosition = function() return .5, .5 end
+GetCurrentMapContinent = function() return 2 end
+GetCurrentMapZone = function() return 1 end
+for _, q in ipairs({ { 2865, false }, { 2865, true }, { 166, true }, { 214, false } }) do
+	local ok, err = pcall(pfQuestOctoMaps.FindQuest, q[1], q[2])
+	if not ok then print('  FAIL quest log find ' .. q[1] .. ': ' .. tostring(err)) errors = errors + 1 end
 end
 -- inside Zul'Farrak pfQuest's name lookup says 978; the map's own zone is 1176
 GetMapInfo = function() return 'ZulFarrak' end

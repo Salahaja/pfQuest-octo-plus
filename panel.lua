@@ -189,6 +189,8 @@ local function targets(id)
   return out
 end
 
+M.Targets = targets
+
 -- the dungeon a quest's targets are mostly in, if any: its map entry
 function M.DungeonOf(id)
   local count, best, bestn = {}, nil, 0

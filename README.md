@@ -93,6 +93,11 @@ Clicking a quest opens the map it is on, a dungeon's own map included, and
 flashes a **!** with an arrow over it for five seconds: on the quest giver, or
 once the quest is in your log, on whoever you speak to or turn it in to.
 
+**The quest log** gets an **Instance Quests** button, and pfQuest's **Show**
+button now finds the quest the same way: after pinning it, a **!** flashes on
+the turn-in once the quest is complete, or on the objectives nearest you;
+objectives in a dungeon you are not in open the dungeon map panel.
+
 **Dungeon maps.** A quest whose targets are in a dungeon you are not in opens
 a map of that dungeon in a panel of its own, drawn from the client's map
 pictures: the mobs to kill (red), objects to use (yellow) and whatever drops
