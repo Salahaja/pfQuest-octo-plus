@@ -118,6 +118,11 @@ character to load what the server knows you have finished.
 
 ## What it cannot fix
 
+- **Dungeons with more than one floor (not fixed yet).** Single-floor dungeon
+  maps are right; the floors of Blackrock Depths, the Black Morass, Ahn'Qiraj,
+  Naxxramas and Upper Karazhan are not all mapped to the right spawns yet and
+  will be fixed one dungeon at a time.
+
 - **106 quests whose giver has no position anywhere.** 63 event NPCs that
   only spawn during their event (the Children's Week orphans), 21 dungeon NPCs
   the site places at 0,0 (Dire Maul), 7 givers the server does not have, and
