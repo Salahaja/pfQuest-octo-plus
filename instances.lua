@@ -735,6 +735,9 @@ end
 
 SLASH_PFQUESTOCTOINST1, SLASH_PFQUESTOCTOINST2 = "/instq", "/instancequests"
 SlashCmdList["PFQUESTOCTOINST"] = function(input)
+  if string.lower(input or "") == "mapdebug" and pfQuestOctoMaps then
+    return pfQuestOctoMaps.Debug()
+  end
   toggle()
 end
 

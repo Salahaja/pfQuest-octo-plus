@@ -79,6 +79,7 @@ end
 -- the map pfQuest draws on: a dungeon map is known by its file name
 if pfMap and pfMap.GetMapID then
   local GetMapID = pfMap.GetMapID
+  M.pfGetMapID = GetMapID
   pfMap.GetMapID = function(self, cid, mid)
     local id = GetMapID(self, cid, mid)
     if id then return id end
@@ -248,3 +249,31 @@ end
 local probe = CreateFrame("Frame")
 probe:RegisterEvent("PLAYER_ENTERING_WORLD")
 probe:SetScript("OnEvent", function() readlists() end)
+
+-- /instq mapdebug: what the client and pfQuest see on the open map, for a
+-- dungeon map that shows no pins. Run it with the world map open.
+function M.Debug()
+  local say = function(t) DEFAULT_CHAT_FRAME:AddMessage("|cff33ffccpf|rQuest map: " .. t) end
+  local name = GetMapInfo()
+  local c, z = GetCurrentMapContinent(), GetCurrentMapZone()
+  local m = name and byname[name]
+  say(string.format("file %s, continent %s, zone %s, in instance %s", tostring(name), tostring(c),
+    tostring(z), tostring(IsInInstance and IsInInstance())))
+  say(string.format("our dungeon entry: %s", m and (m.name .. " -> zone " .. m.zone) or "none"))
+  say(string.format("pfQuest's own id %s, with ours %s, wrapper in place %s",
+    tostring(M.pfGetMapID and M.pfGetMapID(pfMap, c, z)), tostring(pfMap:GetMapID(c, z)),
+    tostring(pfMap.GetMapID ~= M.pfGetMapID)))
+  local id = pfMap:GetMapID(c, z)
+  local nodes, addons = 0, {}
+  for addon, maps in pairs(pfMap.nodes or {}) do
+    local n = 0
+    for _ in pairs(id and maps[id] or {}) do n = n + 1 end
+    if n > 0 then table.insert(addons, addon .. "=" .. n) nodes = nodes + n end
+  end
+  say(string.format("pfQuest nodes on map %s: %d %s", tostring(id), nodes, table.concat(addons, " ")))
+  local shown = 0
+  for _, pin in pairs(pfMap.pins or {}) do
+    if pin:IsShown() then shown = shown + 1 end
+  end
+  say(string.format("pins shown %d, map button %.0fx%.0f", shown, WorldMapButton:GetWidth(), WorldMapButton:GetHeight()))
+end
