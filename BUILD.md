@@ -1,6 +1,6 @@
 # Build report
 
-Built 2026-10-08 17:46 from the server inventory exported 2026-10-08 17:46:40.
+Built 2026-10-12 11:19 from the server inventory exported 2026-10-12 11:19:30.
 
 | source | revision |
 |---|---|
@@ -23,6 +23,8 @@ Built 2026-10-08 17:46 from the server inventory exported 2026-10-08 17:46:40.
 | class mask corrected | 10 |
 | end corrected from the server | 37 |
 | end taken from ryan (the server names none) | 18 |
+| event marked by hand | 39 |
+| event taken from the other databases | 105 |
 | item source added: base | 152 |
 | item source added: octo | 32 |
 | item source added: ryan | 114 |
@@ -48,6 +50,7 @@ Built 2026-10-08 17:46 from the server inventory exported 2026-10-08 17:46:40.
 | reference dropped: the server has no such item | 6 |
 | reference dropped: the server has no such npc | 6 |
 | required level corrected | 17 |
+| skill taken from the other databases | 28 |
 | start corrected from the server | 7 |
 | start taken from ryan (the server names none) | 15 |
 | units faction from the server | 16 |

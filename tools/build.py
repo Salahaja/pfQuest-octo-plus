@@ -82,12 +82,26 @@ PHANTOM_ZONES = [5600, 5098, 5550, 5132, 5138, 5139, 5140, 5150, 5161,
 #   pointing at an empty spot. Empty this when AQ opens. ]]
 HIDE_UNITS = set(range(15761, 15769))
 
+#[[ Holiday quests no database marks as one. pfQuest only asks whether a quest
+#   has an event at all (hidden unless "Display Event & Daily Quests" is on),
+#   so the number is the game event's id for the record, nothing more. ]]
+EVENT_QUESTS = {}
+for _ev, _ids in (
+        (1, (9324, 9325, 9326, 9330, 9331, 9332)),            # Midsummer: stealing the flames
+        (2, (7061, 7063)),                                    # Feast of Winter Veil
+        (3, (7907, 7927, 7928, 7929, 7937, 7938, 7944, 7945)),  # Darkmoon Faire decks, fortunes
+        (7, (80740,)),                                        # Lunar Festival
+        (9, (50227,)),                                        # Noblegarden
+        (10, (171, 558, 910, 911, 915, 925, 1479, 1558, 1687, 1800, 4822, 5502)),  # Children's Week
+        (17, (9247, 9292, 9295, 9299, 9300, 9301, 9302, 9304, 9310))):  # Scourge Invasion
+    EVENT_QUESTS.update(dict.fromkeys(_ids, _ev))
+
 #[[ Translations shipped besides enUS: the two pfQuest-octo loaded. Every
 #   locale file is held in memory by every client whatever its language, and
 #   the 32-bit client's address space is the limit that crashes it. ]]
 LOCALES = ["ruRU", "zhCN"]
 
-VERSION = "2.0.1"
+VERSION = "2.0.2"
 DBURL = "https://octowow.st/db/?quest="
 
 
@@ -417,6 +431,25 @@ class Build:
                         add(letter, ident, other)
             if obj:
                 rec["obj"] = obj
+
+            #[[ Flags TKB's 1.18.1 export dropped. All 62 Lunar Festival Elder
+            #   quests came without their event, so pfQuest drew every Elder
+            #   all year; the engineering specialisations (3633, 3638...) came
+            #   without their skill, so they showed to anyone. An event is
+            #   taken when the databases that name one agree; a skill when at
+            #   least two agree, since base pfQuest alone puts cooking and
+            #   leatherworking on quests that never asked for them (90, 769). ]]
+            for field, need in (("event", 1), ("skill", 2)):
+                if rec.get(field):
+                    continue
+                vals = [orec[field] for _, orec in cands if orec.get(field)]
+                if len(vals) >= need and len(set(vals)) == 1:
+                    rec[field] = vals[0]
+                    self.bump("%s taken from the other databases" % field)
+            if not rec.get("event") and qid in EVENT_QUESTS:
+                rec["event"] = EVENT_QUESTS[qid]
+                self.bump("event marked by hand")
+
             if not cands and s.get("sections", {}).get("Series"):
                 chain = s["sections"]["Series"]
                 if qid in chain and chain.index(qid) > 0:

@@ -57,6 +57,17 @@ quests; its 110 quests the server lacks are unreleased raid rewards (Naxxramas
 rings, Karazhan and Emerald Sanctum set pieces), Scourge Invasion turn-ins and
 test or GM quests.
 
+Holiday and profession quests are flagged the way pfQuest expects, so they
+stay hidden unless you ask for them. TKB's 1.18.1 export dropped those flags.
+Since 2.0.2, a quest gets its holiday flag when the other databases agree
+on it: that covers the 62 Lunar Festival Elders, 36 Darkmoon Faire quests and
+5 fishing-contest quests. 39 more are flagged by hand: Children's Week,
+Midsummer's flame thefts, Winter Veil, Scourge Invasion, the Darkmoon decks
+and fortunes, and Noblegarden. A profession requirement is restored when two
+databases agree on it, which brings back 28, including the engineering
+specialisations. Holiday quests show only with **Display Event & Daily
+Quests** on. pfQuest cannot tell whether a holiday is running right now.
+
 ## What it cannot fix
 
 - **106 quests whose giver has no position anywhere.** 63 event NPCs that
