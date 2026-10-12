@@ -1,6 +1,6 @@
 # Build report
 
-Built 2026-10-12 17:22 from the server inventory exported 2026-10-12 17:22:47.
+Built 2026-10-12 17:32 from the server inventory exported 2026-10-12 17:32:03.
 
 | source | revision |
 |---|---|
@@ -48,6 +48,14 @@ Built 2026-10-12 17:22 from the server inventory exported 2026-10-12 17:22:47.
 | pre taken from ryan (the server names none) | 162 |
 | pre taken from the server | 16 |
 | pre taken from tkb (the server names none) | 8 |
+| quest D text from base | 15 |
+| quest D text from ryan | 13 |
+| quest D text from the server | 5 |
+| quest D text from tkb | 2 |
+| quest D text left empty (none anywhere) | 630 |
+| quest O text from base | 14 |
+| quest O text from the server | 21 |
+| quest O text left empty (none anywhere) | 602 |
 | quest base: ryan | 707 |
 | quest base: server only | 5 |
 | quest base: tkb | 5840 |

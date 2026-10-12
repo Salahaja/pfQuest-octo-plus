@@ -102,7 +102,7 @@ for _ev, _ids in (
 #   the 32-bit client's address space is the limit that crashes it. ]]
 LOCALES = ["ruRU", "zhCN"]
 
-VERSION = "2.4.0"
+VERSION = "2.4.1"
 DBURL = "https://octowow.st/db/?quest="
 
 
@@ -479,10 +479,29 @@ class Build:
                 loc = dict(self.src[name]["quests_loc"][qid])
             if not loc:
                 loc = {}
-                for key, field in (("O", "objective_text"), ("D", "description")):
+            #[[ Every quest has its objective and description text, even an
+            #   empty one: pfQuest's quest log puts both through string.gsub,
+            #   and a quest with neither (428 had no objective, 443 no
+            #   description) threw "bad argument #1 to 'gsub'" the moment it
+            #   was taken. Missing texts come from the other databases, then
+            #   the server's page. ]]
+            for key, field in (("O", "objective_text"), ("D", "description")):
+                if loc.get(key):
+                    continue
+                for n in ORDER:
+                    other = self.src[n]["quests_loc"].get(qid)
+                    if isinstance(other, dict) and other.get(key):
+                        loc[key] = other[key]
+                        self.bump("quest %s text from %s" % (key, n))
+                        break
+                else:
                     t = site_text(s.get(field))
                     if t:
                         loc[key] = t
+                        self.bump("quest %s text from the server" % key)
+                    else:
+                        loc[key] = ""
+                        self.bump("quest %s text left empty (none anywhere)" % key)
             loc["T"] = s.get("name") or loc.get("T")
             self.loc["quests"][qid] = loc
 
