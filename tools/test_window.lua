@@ -106,6 +106,7 @@ run('panel.lua')
 run('instances.lua')
 QuestLogFrame = frame()
 run('questlog.lua')
+run('report.lua')
 
 local function each(what) local out = {} for _, h in ipairs(handlers) do if h[2] == what then out[#out + 1] = h end end return out end
 local errors, rows, dupes, other, seen = 0, 0, 0, 0, {}
@@ -230,6 +231,22 @@ for _, q in ipairs({ { 2865, false }, { 2865, true }, { 166, true }, { 214, fals
 	local ok, err = pcall(pfQuestOctoMaps.FindQuest, q[1], q[2])
 	if not ok then print('  FAIL quest log find ' .. q[1] .. ': ' .. tostring(err)) errors = errors + 1 end
 end
+-- /instq mark on Edwin VanCleef (SuperWoW GUID, entry 639), then the report
+UnitExists = function() return 1, '0xF13000027F000001' end
+UnitIsPlayer = function() return nil end
+UnitName = function() return 'Edwin VanCleef' end
+GetRealZoneText = function() return 'The Deadmines' end
+GetSubZoneText = function() return 'Ironclad Cove' end
+GetMapInfo = function() return 'TheDeadmines' end
+pfQuestOcto_Marks = nil
+local ok, err = pcall(pfQuestOctoMaps.Mark)
+if not ok then print('  FAIL mark: ' .. tostring(err)) errors = errors + 1 end
+local line = pfQuestOcto_Marks and pfQuestOcto_Marks[1] or ''
+if not string.find(line, '^mark: TheDeadmines|5138|Edwin VanCleef|639|50.0|50.0|') or not string.find(line, '639@5138:75.7,28.6', 1, true) then
+	print('  FAIL mark line: ' .. line) errors = errors + 1
+end
+ok, err = pcall(pfQuestOctoMaps.Report)
+if not ok then print('  FAIL report: ' .. tostring(err)) errors = errors + 1 end
 -- inside Zul'Farrak pfQuest's name lookup says 978; the map's own zone is 1176
 GetMapInfo = function() return 'ZulFarrak' end
 local id = pfMap:GetMapID(5, 1)

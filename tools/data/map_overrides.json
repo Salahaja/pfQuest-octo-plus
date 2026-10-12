@@ -1,0 +1,4 @@
+{
+ "_how": "Corrections to the dungeon map list from in-game reports (/instq mark, tools/reports.py). floors: a map file name (what GetMapInfo() returns) -> the zone its spawns are filed under; 0 for none.",
+ "floors": {}
+}

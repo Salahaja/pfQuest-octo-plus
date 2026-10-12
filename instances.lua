@@ -744,9 +744,12 @@ end
 
 SLASH_PFQUESTOCTOINST1, SLASH_PFQUESTOCTOINST2 = "/instq", "/instancequests"
 SlashCmdList["PFQUESTOCTOINST"] = function(input)
-  if string.lower(input or "") == "mapdebug" and pfQuestOctoMaps then
-    return pfQuestOctoMaps.Debug()
-  end
+  local cmd = string.lower(input or "")
+  local M = pfQuestOctoMaps
+  if M and cmd == "mapdebug" then return M.Debug() end
+  if M and M.Report and cmd == "report" then return M.Report() end
+  if M and M.Mark and cmd == "mark" then return M.Mark() end
+  if M and M.ClearMarks and cmd == "marks clear" then return M.ClearMarks() end
   toggle()
 end
 

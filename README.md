@@ -7,6 +7,8 @@ checked quest by quest against the server's own database at
 One addon. It replaces `pfQuest-octo` and `pfQuest-turtle` — do not run
 either alongside it.
 
+A collaboration of **The Iron Hammers** — *and the hammer falls.*
+
 ## Install
 
 1. Install [pfQuest](https://github.com/The-Kludge-Bureau/pfQuest) 8.0.0 or
@@ -116,6 +118,24 @@ Silk Bandanas under Westfall or the Thorium Brotherhood's Molten Core turn-ins.
 "Done" comes from pfQuest's quest history, so run `/db query` once per
 character to load what the server knows you have finished.
 
+## Reporting map problems
+
+Inside a dungeon, two buttons in the quest log (or `/instq mark`,
+`/instq report`) collect what is needed to fix a wrong map:
+
+- **Mark**: target an NPC (a boss is best) and click it. It records where the
+  NPC really stands -- the map file, the floor, your position next to it --
+  and where the database puts it. Do it for a few NPCs on each floor.
+- **Report**: a window of plain text (Ctrl+A, Ctrl+C) with the addon version,
+  your character, what the open map is to the game, to pfQuest and to this
+  addon, and every mark. Paste it into an issue or the guild's Discord.
+
+The marks are also kept in `WTF\Account\<ACCOUNT>\SavedVariables\pfQuest-octo-plus.lua`.
+`python tools/reports.py <report or that file>` lists every mark against the
+database; with `--write` it puts the floor zones the marks agree on into
+`tools/data/map_overrides.json`, which the build reads. `/instq marks clear`
+starts over.
+
 ## What it cannot fix
 
 - **Dungeons with more than one floor (not fixed yet).** Single-floor dungeon
@@ -223,6 +243,8 @@ which cost 18 quests their start pin.
 
 ## Credits
 
+- **The Iron Hammers** — built, played and tested together. *And the hammer
+  falls.*
 - **[Shagu](https://github.com/shagu)** — pfQuest and pfQuest-turtle.
 - **[txtsd / The-Kludge-Bureau](https://github.com/The-Kludge-Bureau)** — the
   maintained pfQuest 8 and the 1.18.1 database.

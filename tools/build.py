@@ -102,7 +102,7 @@ for _ev, _ids in (
 #   the 32-bit client's address space is the limit that crashes it. ]]
 LOCALES = ["ruRU", "zhCN"]
 
-VERSION = "2.4.1"
+VERSION = "2.5.0"
 DBURL = "https://octowow.st/db/?quest="
 
 
@@ -907,17 +907,18 @@ def write_toc(locales):
     with open(os.path.join(REPO, "pfQuest-octo-plus.toc"), "w", encoding="utf-8", newline="\n") as f:
         f.write("## Interface: 11200\n"
                 "## Title: |cff33ffccpf|cffffffffQuest |cffcccccc[Octo DB+]\n"
-                "## Author: Shagu, Gurky, txtsd, paokkerkir, ryanmr82; built by Salahaja\n"
+                "## Author: Shagu, Gurky, txtsd, paokkerkir, ryanmr82; built by Salahaja with The Iron Hammers\n"
                 "## Notes: The OctoWoW quest database for pfQuest, checked against the "
-                "server's own. Replaces pfQuest-octo and pfQuest-turtle - do not run them alongside.\n"
+                "server's own. Replaces pfQuest-octo and pfQuest-turtle - do not run them alongside. "
+                "A collaboration of The Iron Hammers - and the hammer falls.\n"
                 "## Version: %s\n"
                 "## Dependencies: pfQuest\n"
-                "## SavedVariables: pfQuest_turtlecount\n\n" % VERSION)
+                "## SavedVariables: pfQuest_turtlecount, pfQuestOcto_Marks\n\n" % VERSION)
         for loc in ["data"] + locales:
             f.write("init\\%s-turtle.xml\n" % loc)
         f.write("\npatchtable.lua\n")
         # the instance quest window: its lists, the dungeon maps, the window
-        f.write("\ndb\\instances-turtle.lua\nmaps.lua\npanel.lua\ninstances.lua\nquestlog.lua\n")
+        f.write("\ndb\\instances-turtle.lua\nmaps.lua\npanel.lua\ninstances.lua\nquestlog.lua\nreport.lua\n")
 
 
 def report(b, revs, stamp, inv_stamp):

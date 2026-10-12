@@ -156,6 +156,8 @@ def dungeon_maps():
     here = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(here, "data", "worldmaparea.json"), encoding="utf-8") as f:
         rows = json.load(f)["rows"]
+    with open(os.path.join(here, "data", "map_overrides.json"), encoding="utf-8") as f:
+        overrides = json.load(f).get("floors", {})
     out, floors, owner = [], {}, {}
     for r in sorted(rows, key=lambda r: (r["map"], r["id"])):
         if r["map"] in (0, 1) or r["left"] == r["right"]:
@@ -168,6 +170,9 @@ def dungeon_maps():
         #   pins and no boss spots, until its own spawns are known. ]]
         if owner.setdefault(zone, r["map"]) != r["map"]:
             zone = 0
+        # a floor's zone as testers' reports showed it (tools/reports.py)
+        if r["name"] in overrides:
+            zone = int(overrides[r["name"]])
         # the instance's name, as the game's zone lists would show it
         title = next((n for n, k, f, sp in INSTANCES if zone in sp), None)
         out.append({"name": r["name"], "map": r["map"], "floor": floors[r["map"]],
