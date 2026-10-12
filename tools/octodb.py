@@ -96,6 +96,10 @@ CLUSTER_MIN = 5
 # New quests are appended after a cluster's last id; the stretch before its
 # first is only checked lightly.
 ID_MARGIN_BEFORE = 50
+# The ids just past each cluster's last quest were checked and found empty,
+# and they are where the server's next quests land. An id there that came back
+# empty is asked again once it is older than --refresh-days.
+RECHECK_ABOVE = 50
 # Below this, quest ids are Blizzard's and every database already lists the
 # ones that exist; --full sweeps them anyway.
 CUSTOM_ID_FLOOR = 10000
@@ -646,7 +650,10 @@ class Crawler:
                 spans.append([i, i, 1])
         return [(a, b) for a, b, n in spans if n >= CLUSTER_MIN]
 
-    def discover(self, pfquest_dirs):
+    def discover(self, pfquest_dirs, populated_only=False):
+        """populated_only: re-read only the categories that held quests last
+        time, the menu and the custom list -- the daily check for new quests.
+        A brand-new zone is found by the full run, which reads them all."""
         before = len(self.store.ids("SELECT id FROM quests"))
         # 1. the custom-quest list and every top-level group the menu shows
         cats = self.menu()
@@ -657,6 +664,9 @@ class Crawler:
             rounds += 1
             todo = {c: s for c, s in self.zone_candidates(pfquest_dirs).items()}
             todo.update(cats)
+            if populated_only:
+                held = set(self.store.ids("SELECT cat FROM categories WHERE rows > 0"))
+                todo = {c: s for c, s in todo.items() if c in held or c in cats}
             todo = {c: s for c, s in todo.items()
                     if not self.store.fresh("category", c, self.max_age)}
             if not todo:
@@ -682,6 +692,12 @@ class Crawler:
         candidates = set(known_ids)
         for a, b in self.id_spans(known_ids | have):
             candidates.update(range(max(CUSTOM_ID_FLOOR, a - ID_MARGIN_BEFORE), b + ID_MARGIN + 1))
+        # past the last quest the server has in each cluster: ask again
+        stale = time.time() - self.max_age
+        for a, b in self.id_spans(have):
+            checked -= set(self.store.ids(
+                "SELECT id FROM absent WHERE kind='quest' AND id > ? AND id <= ? AND checked < ?",
+                b, b + RECHECK_ABOVE, stale))
         if full:
             candidates.update(range(1, CUSTOM_ID_FLOOR))
         todo = sorted(c for c in candidates - have - checked)
@@ -970,6 +986,8 @@ def main():
     ap.add_argument("--full", action="store_true",
                     help="also check every Blizzard quest id one by one (~10k requests)")
     ap.add_argument("--limit", type=int, default=None, help="stop after this many pages")
+    ap.add_argument("--populated-only", action="store_true",
+                    help="discover: re-read only the categories that held quests last time")
     ap.add_argument("--extra", action="append", default=[],
                     help="refs: also read the kind=id pairs in this file (build.py writes one)")
     ap.add_argument("--out", default=None, help="export file (default: <data>/octodb.json)")
@@ -993,7 +1011,7 @@ def main():
         #   part done: what exists, then what each quest says, then the ids no
         #   category lists, then what the quests point at. ]]
         if args.command in ("run", "discover"):
-            crawler.discover(args.pfquest)
+            crawler.discover(args.pfquest, args.populated_only)
         if args.command in ("run", "quests"):
             crawler.quests(args.limit)
         if args.command in ("run", "sweep"):

@@ -101,7 +101,7 @@ for _ev, _ids in (
 #   the 32-bit client's address space is the limit that crashes it. ]]
 LOCALES = ["ruRU", "zhCN"]
 
-VERSION = "2.0.2"
+VERSION = "2.0.3"
 DBURL = "https://octowow.st/db/?quest="
 
 
@@ -408,6 +408,17 @@ class Build:
                     rec[field] = s[key]
                 else:
                     rec.pop(field, None)
+
+            #[[ The server's prerequisites, where no database has one that
+            #   agrees. 16 quests had none at all -- The Pledge of Secrecy
+            #   (3638) showed to every engineer, not just those who read the
+            #   Goblin manual. pfQuest reads "pre" as any one of, the same as
+            #   the page's "Require One of". ]]
+            sec = s.get("sections", {})
+            req = set(sec.get("Require One of") or []) | set(sec.get("Requires") or [])
+            if req and not req & set(rec.get("pre") or []):
+                self.bump("pre %s from the server" % ("corrected" if rec.get("pre") else "taken"))
+                rec["pre"] = sorted(req)
 
             # objectives: this record, the server's targets, and any other
             # record that agrees with the server on start and end

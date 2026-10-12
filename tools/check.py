@@ -28,6 +28,8 @@ ROWS = ["missing", "not on the server", "start differs", "end differs",
         "objective target missing", "level differs", "required level differs",
         "race mask differs", "class mask differs", "start cannot pin",
         "no start on the map"]
+# what the server decides; a build that lets any of these through is broken
+STRICT = ROWS[:9]
 
 
 def ids(part, letter):
@@ -101,6 +103,9 @@ def main():
     ap.add_argument("--octodb", default=os.environ.get("OCTODB_DATA", octodb.DEFAULT_DATA))
     ap.add_argument("--pfquest", default=r"D:\stuff\client - Copy (2)\Interface\AddOns\pfQuest")
     ap.add_argument("--examples", action="store_true", help="list quest ids for each row")
+    ap.add_argument("--strict", action="store_true",
+                    help="exit 1 if any extension disagrees with the server on anything "
+                         "the server decides (the pin rows are not counted)")
     args = ap.parse_args()
 
     with open(os.path.join(args.octodb, "octodb.json"), encoding="utf-8") as f:
@@ -124,6 +129,11 @@ def main():
             for row in ROWS:
                 if ex[row]:
                     print("  %-26s %s" % (row, ", ".join(map(str, sorted(ex[row])))))
+    if args.strict:
+        bad = [(r[0], row, r[2][row]) for r in results for row in STRICT if r[2][row]]
+        for name, row, n in bad:
+            print("STRICT: %s -- %s: %d" % (name, row, n))
+        sys.exit(1 if bad else 0)
 
 
 if __name__ == "__main__":

@@ -119,6 +119,19 @@ lua tools/test_build.lua <pfQuest dir> ../build-cache               # load it th
 python tools/check.py               # compare it with the server
 ```
 
+Or all of it in one go, on Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\update.ps1             # quick: new quests only, ~15 min
+powershell -ExecutionPolicy Bypass -File tools\update.ps1 -Mode Full  # re-read everything older than a week
+```
+
+`update.ps1` pulls the source databases, asks the server what changed, builds,
+tests, and stops at the first check that fails (`check.py --strict`). If the
+database really changed, it bumps the patch version, commits, pushes and
+fast-forwards the installed copy in AddOns. `-NoPush` commits only;
+`-DryRun` leaves git alone. Logs go to `../update-logs`.
+
 `octodb.py selftest` checks the page parsers against real pages in
 `tools/fixtures`. `BUILD.md` records every decision the build made and the
 source revisions it used.

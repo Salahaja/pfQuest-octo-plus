@@ -1,6 +1,6 @@
 # Build report
 
-Built 2026-10-12 11:19 from the server inventory exported 2026-10-12 11:19:30.
+Built 2026-10-12 11:27 from the server inventory exported 2026-10-12 11:27:52.
 
 | source | revision |
 |---|---|
@@ -40,7 +40,9 @@ Built 2026-10-12 11:19 from the server inventory exported 2026-10-12 11:19:30.
 | objects from server | 1 |
 | objects from tkb | 21146 |
 | objects placed by the server (no source had a position) | 1 |
+| pre corrected from the server | 1 |
 | pre taken from ryan (the server names none) | 162 |
+| pre taken from the server | 16 |
 | pre taken from tkb (the server names none) | 8 |
 | quest base: ryan | 707 |
 | quest base: server only | 5 |
