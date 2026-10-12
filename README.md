@@ -90,7 +90,7 @@ too, so a history that started late still adds up. **Query server** at the
 top runs `/db query` and redraws when the answer arrives.
 
 Clicking a quest opens the map it is on, a dungeon's own map included, and
-flashes a **!** with an arrow over it for ten seconds: on the quest giver, or
+flashes a **!** with an arrow over it for five seconds: on the quest giver, or
 once the quest is in your log, on whoever you speak to or turn it in to.
 
 **Dungeon maps.** Inside a dungeon, pfQuest now draws its pins on Turtle's

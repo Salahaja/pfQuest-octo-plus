@@ -492,7 +492,7 @@ local function points(coords, zone)
 end
 
 -- Show a quest: pfQuest's pins, the map they are on, and a flashing marker
--- for ten seconds on whoever to see -- the giver, or once the quest is in
+-- for five seconds on whoever to see -- the giver, or once the quest is in
 -- the log the one to speak to or turn in to, which pfQuest may not pin.
 local function showquest(id, st)
   if IsShiftKeyDown() and pfQuestCompat and pfQuestCompat.InsertQuestLink then

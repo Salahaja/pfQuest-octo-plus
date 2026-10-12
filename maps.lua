@@ -188,7 +188,7 @@ end
 -- ------------------------------------------------------------------ marker
 
 -- a flashing ! with a bouncing arrow over it, at x, y (0-100) on the open
--- map, for ten seconds or until the map changes or closes
+-- map, for five seconds or until the map changes or closes
 local markers = {}
 local function marker(i)
   if markers[i] then return markers[i] end
@@ -196,13 +196,6 @@ local function marker(i)
   f:SetFrameLevel(WorldMapButton:GetFrameLevel() + 20)
   f:SetWidth(40)
   f:SetHeight(40)
-  f.ring = f:CreateTexture(nil, "ARTWORK")
-  f.ring:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
-  f.ring:SetBlendMode("ADD")
-  f.ring:SetVertexColor(1, .82, 0)
-  f.ring:SetWidth(72)
-  f.ring:SetHeight(72)
-  f.ring:SetPoint("CENTER", 0, 0)
   f.bang = f:CreateTexture(nil, "OVERLAY")
   f.bang:SetTexture(pfQuestConfig and (pfQuestConfig.path .. "\\img\\available") or "Interface\\GossipFrame\\AvailableQuestIcon")
   f.bang:SetVertexColor(1, .9, .1)
@@ -228,7 +221,6 @@ local function marker(i)
     local t = now - this.start
     local a = .55 + .45 * math.abs(math.sin(t * math.pi * 2))
     this.bang:SetAlpha(a)
-    this.ring:SetAlpha(a)
     this.arrow:ClearAllPoints()
     this.arrow:SetPoint("BOTTOM", this, "TOP", 0, 2 + 6 * math.abs(math.sin(t * math.pi * 2)))
   end)
@@ -247,7 +239,7 @@ function M.Flash(points, label)
   for i, p in ipairs(points) do
     if i > 5 then break end
     local f = marker(i)
-    f.x, f.y, f.start, f.stop, f.map = p[1], p[2], now, now + 10, GetMapInfo()
+    f.x, f.y, f.start, f.stop, f.map = p[1], p[2], now, now + 5, GetMapInfo()
     f.label:SetText(i == 1 and label or "")
     f:Show()
   end
