@@ -76,15 +76,18 @@ end
 
 -- ------------------------------------------------------------------ pfQuest
 
--- the map pfQuest draws on: a dungeon map is known by its file name
+--[[ The map pfQuest draws on. A dungeon map is known by its file name, and
+  that comes first: inside Zul'Farrak the game reports continent 5, zone 1,
+  "Zul'Farrak", which pfQuest's name lookup turns into 978 -- the id quests
+  are filed under -- while every spawn there is placed on 1176, the map's
+  own. pfQuest then found no pins on 978 and drew nothing. ]]
 if pfMap and pfMap.GetMapID then
   local GetMapID = pfMap.GetMapID
   M.pfGetMapID = GetMapID
   pfMap.GetMapID = function(self, cid, mid)
-    local id = GetMapID(self, cid, mid)
-    if id then return id end
     local m = M.Current()
-    return m and m.zone
+    if m then return m.zone end
+    return GetMapID(self, cid, mid)
   end
 end
 

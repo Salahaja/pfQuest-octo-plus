@@ -64,7 +64,8 @@ pfDatabase = { GetBitByRace = function() return RACEBIT end, GetBitByClass = fun
 	GetHexDifficultyColor = function() return '' end, SearchQuestID = function() return {} end,
 	GetBestMap = noop, QueryServer = noop }
 pfMap = { GetMapNameByID = function(_, z) return 'zone' end, ShowMapID = noop, UpdateNodes = noop,
-	GetMapID = function() return nil end, SetMapByID = noop }
+	-- pfQuest's name lookup inside Zul'Farrak gives the quest id, 978
+	GetMapID = function() if GetMapInfo() == 'ZulFarrak' then return 978 end end, SetMapByID = noop }
 WorldMapFrame, WorldMapButton, WorldMapTooltip = frame(), frame(), frame()
 SetMapZoom, ToggleWorldMap = noop, noop
 GetMapInfo = function() return 'TheDeadmines' end
@@ -186,6 +187,11 @@ if TOOLTIP[1] ~= 'Edwin VanCleef' or TOOLTIP[2] then
 	errors = errors + 1
 end
 errors = errors + BADZOOM
+-- inside Zul'Farrak pfQuest's name lookup says 978; the map's own zone is 1176
+GetMapInfo = function() return 'ZulFarrak' end
+local id = pfMap:GetMapID(5, 1)
+if id ~= 1176 then print('  FAIL inside ZulFarrak pfQuest draws on ' .. tostring(id) .. ', not 1176') errors = errors + 1 end
+GetMapInfo = function() return 'TheDeadmines' end
 WINDOW_ERRORS, WINDOW_DUPES, WINDOW_OTHER, WINDOW_ROWS = errors, dupes, other, rows
 print(('  ui (%s): %d quest clicks, %d dungeon maps opened'):format(FACTION, CLICKS or 0, #OPENED))
 -- DRIVE ]==]
