@@ -156,15 +156,22 @@ def dungeon_maps():
     here = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(here, "data", "worldmaparea.json"), encoding="utf-8") as f:
         rows = json.load(f)["rows"]
-    out, floors = [], {}
+    out, floors, owner = [], {}, {}
     for r in sorted(rows, key=lambda r: (r["map"], r["id"])):
         if r["map"] in (0, 1) or r["left"] == r["right"]:
             continue
         floors[r["map"]] = floors.get(r["map"], 0) + 1
+        zone = r["area"]
+        #[[ A zone two maps share belongs to the first. UpperKarazhan's first
+        #   floor is filed under 3457, Lower Karazhan Halls' zone, and drew
+        #   Moroes and his household on the tower: it gets no zone, so no
+        #   pins and no boss spots, until its own spawns are known. ]]
+        if owner.setdefault(zone, r["map"]) != r["map"]:
+            zone = 0
         # the instance's name, as the game's zone lists would show it
-        title = next((n for n, k, f, sp in INSTANCES if r["area"] in sp), None)
+        title = next((n for n, k, f, sp in INSTANCES if zone in sp), None)
         out.append({"name": r["name"], "map": r["map"], "floor": floors[r["map"]],
-                    "zone": r["area"], "title": title})
+                    "zone": zone, "title": title})
     return out
 
 

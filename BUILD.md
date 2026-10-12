@@ -1,6 +1,6 @@
 # Build report
 
-Built 2026-10-12 17:10 from the server inventory exported 2026-10-12 17:10:55.
+Built 2026-10-12 17:15 from the server inventory exported 2026-10-12 17:15:48.
 
 | source | revision |
 |---|---|
@@ -20,7 +20,7 @@ Built 2026-10-12 17:10 from the server inventory exported 2026-10-12 17:10:55.
 
 | decision | count |
 |---|---|
-| boss spots on painted skulls | 211 |
+| boss spots on painted skulls | 207 |
 | boss spots where the boss stands (no skulls painted) | 43 |
 | class mask corrected | 10 |
 | end corrected from the server | 37 |
