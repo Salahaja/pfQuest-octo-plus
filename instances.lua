@@ -727,8 +727,9 @@ end
 
 SLASH_PFQUESTOCTOINST1, SLASH_PFQUESTOCTOINST2 = "/instq", "/instancequests"
 SlashCmdList["PFQUESTOCTOINST"] = function(input)
-  if string.lower(input or "") == "maptest" and pfQuestOctoMaps then
-    return pfQuestOctoMaps.MapTest()
+  local cmd = string.lower(input or "")
+  if string.find(cmd, "^maptest") and pfQuestOctoMaps then
+    return pfQuestOctoMaps.MapTest(string.sub(cmd, 8))
   end
   toggle()
 end

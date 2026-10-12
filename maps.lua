@@ -17,6 +17,16 @@ for _, m in pairs(pfQuestOcto_DungeonMaps or {}) do
 end
 M.byname, M.byzone = byname, byzone
 
+--[[ Floors above the first are not opened yet. SetMapZoom(map, 2) on a map
+  with floors crashed the client during the first map test (2026-10-12,
+  ERROR #132 at 0x004A6D1E); nothing else on this client asks for a floor
+  above 1. Until a test shows which floors are safe, a map's upper floors
+  open its first. ]]
+M.floors = false
+local function floor(m)
+  return M.floors and m.floor or 1
+end
+
 -- the dungeon map open now, if any
 function M.Current()
   local name = GetMapInfo()
@@ -33,7 +43,7 @@ function M.Open(zone)
   if not WorldMapFrame:IsShown() then
     if ToggleWorldMap then ToggleWorldMap() else WorldMapFrame:Show() end
   end
-  SetMapZoom(m.map, m.floor)
+  SetMapZoom(m.map, floor(m))
   pfMap:UpdateNodes()
   return true
 end
@@ -57,7 +67,7 @@ if pfMap and pfMap.SetMapByID then
   pfMap.SetMapByID = function(self, id)
     local m = byzone[tonumber(id)]
     if m then
-      SetMapZoom(m.map, m.floor)
+      SetMapZoom(m.map, floor(m))
       return
     end
     return SetMapByID(self, id)
@@ -248,7 +258,17 @@ local function tbutton(text, x, fn)
   return b
 end
 
-local list = pfQuestOcto_DungeonMaps or {}
+-- the maps to test: first floors only, unless /instq maptest floors
+local all = pfQuestOcto_DungeonMaps or {}
+local list = {}
+local function pick(floors)
+  list = {}
+  for _, m in ipairs(all) do
+    if floors or m.floor == 1 then table.insert(list, m) end
+  end
+end
+pick(false)
+
 local function show(i)
   local m = list[i]
   if not m then return end
@@ -256,6 +276,10 @@ local function show(i)
   if not WorldMapFrame:IsShown() then
     if ToggleWorldMap then ToggleWorldMap() else WorldMapFrame:Show() end
   end
+  -- said before it is asked for: with the chat log on, the last line in
+  -- Logs\WoWChatLog.txt names the map if the client crashes on it
+  DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff33ffccpf|rQuest map test: opening %d/%d %s (map %d, floor %d)",
+    i, table.getn(list), m.name, m.map, m.floor))
   SetMapZoom(m.map, m.floor)
   test.text:SetText(string.format("%d/%d  %s  (map %d, floor %d)\nchecking...",
     i, table.getn(list), m.name, m.map, m.floor))
@@ -308,10 +332,19 @@ end)
 
 tbutton("Prev", 10, function() test.auto = nil show(math.max(1, (test.i or 1) - 1)) end)
 tbutton("Next", 84, function() test.auto = nil show(math.min(table.getn(list), (test.i or 0) + 1)) end)
-tbutton("Run all", 158, function() pfQuestOcto_MapTest = {} test.auto = true show(1) end)
+tbutton("Run all", 158, function() test.auto = true show(test.i or 1) end)
 tbutton("Close", 240, function() test.auto = nil test:Hide() end)
 
-function M.MapTest()
+-- /instq maptest [floors] [start number]
+function M.MapTest(args)
+  local floors = string.find(args or "", "floors", 1, true) and true or false
+  local _, _, start = string.find(args or "", "(%d+)")
+  pick(floors)
+  if LoggingChat and not LoggingChat() then
+    LoggingChat(1)
+    DEFAULT_CHAT_FRAME:AddMessage("|cff33ffccpf|rQuest map test: chat log on (Logs\WoWChatLog.txt)")
+  end
+  test.i = tonumber(start) or test.i or 1
   test:Show()
-  show(test.i or 1)
+  show(test.i)
 end
