@@ -1,14 +1,26 @@
--- Dungeon maps. Turtle's client has a map for every instance and opens it
--- from anywhere with SetMapZoom(map, floor), but pfQuest only knows maps by
--- the names in each continent's zone list, where dungeons are not. So it
--- drew no pins on a dungeon map and its Show buttons could not open one.
--- This file teaches it the dungeon maps (the list is built from the client's
--- own WorldMapArea table, db/instances-turtle.lua), names the boss icons on
--- them, flashes a marker where /instq sends you, and has a test that opens
--- every dungeon map in turn: /instq maptest.
+-- Dungeon maps. Turtle's client has a map for every instance, shown while
+-- you are inside it, but pfQuest only knows maps by the names in each
+-- continent's zone list, where dungeons are not: it drew no pins on a
+-- dungeon map. This file teaches it the dungeon maps (the list is built from
+-- the client's own WorldMapArea table, db/instances-turtle.lua), names the
+-- boss icons on them, and flashes a marker where /instq sends you.
+--
+-- Turtle's client opens SOME dungeon maps from anywhere with
+-- SetMapZoom(map id, 1), and crashes on others: map 47, Razorfen Kraul, took
+-- the client down (ERROR #132 at 0x004A6D1E, 2026-10-12) after the first
+-- seven opened fine. No game table says which -- WorldMapContinent.dbc holds
+-- only the continents -- so a map id is used only once it has been seen to
+-- open in game (SAFE below). Any other dungeon map opens with
+-- SetMapToCurrentZone() from inside it. /instq maptest tries the untested
+-- ones, one click at a time, writing each to the chat log before trying it.
 
 pfQuestOctoMaps = {}
 local M = pfQuestOctoMaps
+
+-- map ids seen to open with SetMapZoom(id, 1) in game, and seen to crash
+local SAFE = { [27] = true, [30] = true, [33] = true, [34] = true, [35] = true, [36] = true, [43] = true }
+local CRASH = { [47] = true }
+M.safe, M.crash = SAFE, CRASH
 
 local byname, byzone = {}, {}
 for _, m in pairs(pfQuestOcto_DungeonMaps or {}) do
@@ -17,35 +29,61 @@ for _, m in pairs(pfQuestOcto_DungeonMaps or {}) do
 end
 M.byname, M.byzone = byname, byzone
 
---[[ Floors above the first are not opened yet. SetMapZoom(map, 2) on a map
-  with floors crashed the client during the first map test (2026-10-12,
-  ERROR #132 at 0x004A6D1E); nothing else on this client asks for a floor
-  above 1. Until a test shows which floors are safe, a map's upper floors
-  open its first. ]]
-M.floors = false
-local function floor(m)
-  return M.floors and m.floor or 1
-end
-
 -- the dungeon map open now, if any
 function M.Current()
   local name = GetMapInfo()
   return name and byname[name]
 end
 
--- open the world map on a zone: a dungeon map by its map id and floor,
--- anything else the way pfQuest does
+-- dungeons the game lists as a zone of some continent: title -> {c, z}
+local listed = {}
+local function readlists()
+  listed = {}
+  local continents = { GetMapContinents() }
+  for c = 1, table.getn(continents) do
+    local zones = { GetMapZones(c) }
+    for z = 1, table.getn(zones) do
+      listed[zones[z]] = { c, z }
+    end
+  end
+end
+
+local function showmap()
+  if not WorldMapFrame:IsShown() then
+    if ToggleWorldMap then ToggleWorldMap() else WorldMapFrame:Show() end
+  end
+end
+
+-- open the world map on a zone. A dungeon: through the game's own list, or
+-- from inside it; false when neither can, and the map is left alone.
 function M.Open(zone)
   local m = byzone[zone]
   if not m then
     return pfMap:ShowMapID(zone)
   end
-  if not WorldMapFrame:IsShown() then
-    if ToggleWorldMap then ToggleWorldMap() else WorldMapFrame:Show() end
+  local where = m.title and listed[m.title]
+  if where then
+    showmap()
+    SetMapZoom(where[1], where[2])
+    pfMap:UpdateNodes()
+    return true
   end
-  SetMapZoom(m.map, floor(m))
-  pfMap:UpdateNodes()
-  return true
+  if SAFE[m.map] then
+    showmap()
+    SetMapZoom(m.map, 1)
+    pfMap:UpdateNodes()
+    return true
+  end
+  -- is the player in this dungeon? the map of where you stand says
+  SetMapToCurrentZone()
+  local cur = M.Current()
+  if cur and cur.map == m.map then
+    showmap()
+    SetMapToCurrentZone()
+    pfMap:UpdateNodes()
+    return true
+  end
+  return false
 end
 
 -- ------------------------------------------------------------------ pfQuest
@@ -61,13 +99,20 @@ if pfMap and pfMap.GetMapID then
   end
 end
 
--- and its Show buttons open one
+-- and its Show buttons open one, when the game can
 if pfMap and pfMap.SetMapByID then
   local SetMapByID = pfMap.SetMapByID
   pfMap.SetMapByID = function(self, id)
     local m = byzone[tonumber(id)]
     if m then
-      SetMapZoom(m.map, floor(m))
+      local where = m.title and listed[m.title]
+      if where then
+        SetMapZoom(where[1], where[2])
+      elseif SAFE[m.map] then
+        SetMapZoom(m.map, 1)
+      else
+        SetMapToCurrentZone()
+      end
       return
     end
     return SetMapByID(self, id)
@@ -224,12 +269,27 @@ end
 
 -- ------------------------------------------------------------------ map test
 
--- /instq maptest: open every dungeon map in turn and record what opened.
--- Results stay in pfQuestOcto_MapTest (SavedVariables) for checking later.
+--[[ /instq maptest: try the dungeon maps nobody has opened yet, ONE per click,
+  no automatic run -- a map the client cannot open crashes it. Each try is
+  written to chat before and after (with the chat log on, it is in
+  Logs\WoWChatLog.txt), and the panel shows the map it is about to try, so
+  a crash still names the map. Results also go to pfQuestOcto_MapTest. ]]
+local untested = {}
+local function pickuntested()
+  untested = {}
+  local seen = {}
+  for _, m in ipairs(pfQuestOcto_DungeonMaps or {}) do
+    if m.floor == 1 and not SAFE[m.map] and not CRASH[m.map] and not seen[m.map] then
+      seen[m.map] = true
+      table.insert(untested, m)
+    end
+  end
+end
+
 local test = CreateFrame("Frame", "pfQuestOctoMapTest", UIParent)
 test:Hide()
-test:SetWidth(320)
-test:SetHeight(64)
+test:SetWidth(340)
+test:SetHeight(70)
 test:SetPoint("TOP", 0, -80)
 test:SetFrameStrata("FULLSCREEN_DIALOG")
 test:SetBackdrop({
@@ -240,111 +300,74 @@ test:SetBackdrop({
 })
 test:SetBackdropColor(0, 0, 0, .9)
 test:EnableMouse(true)
-test:SetMovable(true)
-test:RegisterForDrag("LeftButton")
-test:SetScript("OnDragStart", function() this:StartMoving() end)
-test:SetScript("OnDragStop", function() this:StopMovingOrSizing() end)
 test.text = test:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 test.text:SetPoint("TOP", 0, -10)
-test.text:SetWidth(300)
+test.text:SetWidth(320)
+
+local function say(msg)
+  DEFAULT_CHAT_FRAME:AddMessage("|cff33ffccpf|rQuest map test: " .. msg)
+end
+
+local function describe()
+  local m = untested[test.i]
+  if m then
+    test.text:SetText(string.format("Next: %d of %d untested  -  %s (map %d)\nIf the game crashes on it, tell Claude this name.",
+      test.i, table.getn(untested), m.name, m.map))
+  else
+    test.text:SetText("No untested maps left.")
+  end
+end
+
+local function try()
+  local m = untested[test.i]
+  if not m then return end
+  say(string.format("trying %s (map %d)...", m.name, m.map))
+  if not WorldMapFrame:IsShown() then
+    if ToggleWorldMap then ToggleWorldMap() else WorldMapFrame:Show() end
+  end
+  SetMapZoom(m.map, 1)
+  test.read = GetTime() + .5
+end
+
+test:SetScript("OnUpdate", function()
+  if not this.read or GetTime() < this.read then return end
+  this.read = nil
+  local m = untested[this.i]
+  local got = GetMapInfo() or "?"
+  pfQuestOcto_MapTest = pfQuestOcto_MapTest or {}
+  pfQuestOcto_MapTest[m.map] = got
+  say(string.format("%s (map %d) opened %s %s", m.name, m.map, got,
+    got == m.name and "|cff55ff55- right|r" or "|cffff5555- WRONG|r"))
+  this.i = this.i + 1
+  describe()
+end)
 
 local function tbutton(text, x, fn)
   local b = CreateFrame("Button", nil, test, "UIPanelButtonTemplate")
-  b:SetWidth(70)
+  b:SetWidth(90)
   b:SetHeight(20)
   b:SetPoint("BOTTOMLEFT", x, 8)
   b:SetText(text)
   b:SetScript("OnClick", fn)
   return b
 end
+tbutton("Try it", 10, function() try() end)
+tbutton("Skip", 104, function() test.i = test.i + 1 describe() end)
+tbutton("Close", 236, function() test:Hide() end)
 
--- the maps to test: first floors only, unless /instq maptest floors
-local all = pfQuestOcto_DungeonMaps or {}
-local list = {}
-local function pick(floors)
-  list = {}
-  for _, m in ipairs(all) do
-    if floors or m.floor == 1 then table.insert(list, m) end
-  end
-end
-pick(false)
-
-local function show(i)
-  local m = list[i]
-  if not m then return end
-  test.i, test.read = i, GetTime() + .5
-  if not WorldMapFrame:IsShown() then
-    if ToggleWorldMap then ToggleWorldMap() else WorldMapFrame:Show() end
-  end
-  -- said before it is asked for: with the chat log on, the last line in
-  -- Logs\WoWChatLog.txt names the map if the client crashes on it
-  DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff33ffccpf|rQuest map test: opening %d/%d %s (map %d, floor %d)",
-    i, table.getn(list), m.name, m.map, m.floor))
-  SetMapZoom(m.map, m.floor)
-  test.text:SetText(string.format("%d/%d  %s  (map %d, floor %d)\nchecking...",
-    i, table.getn(list), m.name, m.map, m.floor))
-end
-
--- what opened, read a moment after asking
-local function record()
-  local m = list[test.i]
-  local got = GetMapInfo() or "?"
-  local marks = {}
-  local n = GetNumMapLandmarks and GetNumMapLandmarks() or 0
-  for i = 1, n do
-    local name = GetMapLandmarkInfo(i)
-    table.insert(marks, name or "")
-  end
-  pfQuestOcto_MapTest = pfQuestOcto_MapTest or {}
-  pfQuestOcto_MapTest[m.name] = {
-    map = m.map, floor = m.floor, opened = got, ok = got == m.name,
-    continent = GetCurrentMapContinent(), zone = GetCurrentMapZone(), landmarks = marks,
-  }
-  local status = got == m.name and "|cff55ff55opened|r" or ("|cffff5555opened " .. got .. "|r")
-  test.text:SetText(string.format("%d/%d  %s  (map %d, floor %d)\n%s, %d boss icon(s)",
-    test.i, table.getn(list), m.name, m.map, m.floor, status, n))
-  if got ~= m.name then
-    DEFAULT_CHAT_FRAME:AddMessage("|cff33ffccpf|rQuest map test: " .. m.name .. " opened " .. got)
-  end
-end
-
-test:SetScript("OnUpdate", function()
-  if this.read and GetTime() >= this.read then
-    this.read = nil
-    record()
-    if this.auto then this.next = GetTime() + 1.5 end
-  end
-  if this.auto and this.next and GetTime() >= this.next then
-    this.next = nil
-    if this.i < table.getn(list) then
-      show(this.i + 1)
-    else
-      this.auto = nil
-      local ok, bad = 0, 0
-      for _, r in pairs(pfQuestOcto_MapTest or {}) do
-        if r.ok then ok = ok + 1 else bad = bad + 1 end
-      end
-      DEFAULT_CHAT_FRAME:AddMessage(string.format(
-        "|cff33ffccpf|rQuest map test done: %d opened right, %d wrong. /reload to save the results.", ok, bad))
-    end
-  end
-end)
-
-tbutton("Prev", 10, function() test.auto = nil show(math.max(1, (test.i or 1) - 1)) end)
-tbutton("Next", 84, function() test.auto = nil show(math.min(table.getn(list), (test.i or 0) + 1)) end)
-tbutton("Run all", 158, function() test.auto = true show(test.i or 1) end)
-tbutton("Close", 240, function() test.auto = nil test:Hide() end)
-
--- /instq maptest [floors] [start number]
+-- /instq maptest [n]: start at untested map n
 function M.MapTest(args)
-  local floors = string.find(args or "", "floors", 1, true) and true or false
-  local _, _, start = string.find(args or "", "(%d+)")
-  pick(floors)
+  pickuntested()
+  local _, _, n = string.find(args or "", "(%d+)")
+  test.i = tonumber(n) or test.i or 1
   if LoggingChat and not LoggingChat() then
     LoggingChat(1)
-    DEFAULT_CHAT_FRAME:AddMessage("|cff33ffccpf|rQuest map test: chat log on (Logs/WoWChatLog.txt)")
+    say("chat log on (Logs/WoWChatLog.txt)")
   end
-  test.i = tonumber(start) or test.i or 1
+  describe()
   test:Show()
-  show(test.i)
 end
+
+local probe = CreateFrame("Frame")
+probe:RegisterEvent("PLAYER_ENTERING_WORLD")
+probe:SetScript("OnEvent", function() readlists() end)

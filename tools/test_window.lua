@@ -20,7 +20,7 @@ local bad = 0
 for _, side in ipairs({ { 'Alliance', 'Human', 1 }, { 'Horde', 'Orc', 2 } }) do
 	local prelude = ("FACTION, RACE, RACEBIT = %q, %q, %d\n"):format(side[1], side[2], side[3])
 	local quiet = print
-	print = function(s) if type(s) == 'string' and s:match('^  ui ') or tostring(s):match('ERROR') or tostring(s):match('OTHER') then quiet(s) end end
+	print = function(s) if type(s) == 'string' and s:match('^  ui ') or tostring(s):match('ERROR') or tostring(s):match('OTHER') or tostring(s):match('FAIL') then quiet(s) end end
 	local chunk = assert(load(prelude .. loader .. drive, '@test_window', 't'))
 	local ok, err = pcall(chunk)
 	print = quiet
@@ -69,7 +69,20 @@ WorldMapFrame, WorldMapButton, WorldMapTooltip = frame(), frame(), frame()
 SetMapZoom, ToggleWorldMap = noop, noop
 GetMapInfo = function() return 'TheDeadmines' end
 OPENED = {}
-SetMapZoom = function(m, f) OPENED[#OPENED + 1] = m end
+-- the game's lists, and SetMapZoom held to them: anything else crashed the
+-- client (2.2.0 passed a dungeon's map id as the continent)
+GetMapContinents = function() return 'Kalimdor', 'Eastern Kingdoms' end
+GetMapZones = function(c) if c == 1 then return 'Durotar', 'Tanaris' elseif c == 2 then return 'Westfall', 'Elwynn Forest' end end
+SetMapToCurrentZone = noop
+BADZOOM = 0
+SetMapZoom = function(c, z)
+	OPENED[#OPENED + 1] = c
+	local verified = pfQuestOctoMaps and pfQuestOctoMaps.safe[c] and z == 1
+	if not verified and (c ~= nil and (c < 0 or c > 2) or z ~= nil and (z < 1 or z > 2)) then
+		BADZOOM = BADZOOM + 1
+		if BADZOOM < 4 then print(("  FAIL SetMapZoom(%s, %s) is outside the game's lists"):format(tostring(c), tostring(z))) end
+	end
+end
 pfQuest = { questlog = { [4264] = {} } }
 pfQuest_history = { [4182] = {}, [4183] = {}, [166] = {}, [40817] = {}, [8915] = {} }
 GameTooltip = setmetatable({}, { __index = function() return noop end })
@@ -173,6 +186,11 @@ if TOOLTIP[1] ~= 'Edwin VanCleef' or TOOLTIP[2] then
 	print('  FAIL boss icon tooltips: ' .. table.concat(TOOLTIP, ', '))
 	errors = errors + 1
 end
+-- the read-only map probe
+for _, h in ipairs(each('OnEvent')) do call(h) end
+local ok, err = pcall(pfQuestOctoMaps.MapTest)
+if not ok then print('  FAIL map probe: ' .. tostring(err)) errors = errors + 1 end
+errors = errors + BADZOOM
 WINDOW_ERRORS, WINDOW_DUPES, WINDOW_OTHER, WINDOW_ROWS = errors, dupes, other, rows
 print(('  ui (%s): %d quest clicks, %d dungeon maps opened'):format(FACTION, CLICKS or 0, #OPENED))
 -- DRIVE ]==]

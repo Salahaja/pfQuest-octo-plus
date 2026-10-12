@@ -149,9 +149,10 @@ def build(b):
 def dungeon_maps():
     """Every map that is not a continent's, from the client's own map table
     (tools/data/worldmaparea.json): its file name, which GetMapInfo() returns
-    when it is open; the map id and floor SetMapZoom(map, floor) opens it
-    with; and the zone pfQuest's positions on it are filed under. A map with
-    floors (Scarlet Monastery has four) lists them in row order."""
+    when it is open; its map id and floor (floors in row order -- Scarlet
+    Monastery has four); the zone pfQuest's positions on it are filed under;
+    and the instance's name. The map id is NOT a SetMapZoom continent: 2.2.0
+    passed it as one and crashed the client."""
     here = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(here, "data", "worldmaparea.json"), encoding="utf-8") as f:
         rows = json.load(f)["rows"]
@@ -160,7 +161,10 @@ def dungeon_maps():
         if r["map"] in (0, 1) or r["left"] == r["right"]:
             continue
         floors[r["map"]] = floors.get(r["map"], 0) + 1
-        out.append({"name": r["name"], "map": r["map"], "floor": floors[r["map"]], "zone": r["area"]})
+        # the instance's name, as the game's zone lists would show it
+        title = next((n for n, k, f, sp in INSTANCES if r["area"] in sp), None)
+        out.append({"name": r["name"], "map": r["map"], "floor": floors[r["map"]],
+                    "zone": r["area"], "title": title})
     return out
 
 
@@ -172,9 +176,10 @@ def write(path, insts, header):
             f.write('  { name = %s, kind = "%s", lvl = %d,\n    quests = {%s},\n    key = {%s} },\n'
                     % (json.dumps(i["name"]), i["kind"], i["lvl"],
                        ",".join(map(str, i["quests"])), ",".join(map(str, i["key"]))))
-        f.write("}\n\n-- the client's dungeon maps: file name, SetMapZoom(map, floor), zone\n"
+        f.write("}\n\n-- the client's dungeon maps: file name, map id and floor, zone, instance\n"
                 "pfQuestOcto_DungeonMaps = {\n")
         for m in dungeon_maps():
-            f.write('  { name = "%s", map = %d, floor = %d, zone = %d },\n'
-                    % (m["name"], m["map"], m["floor"], m["zone"]))
+            title = ", title = %s" % json.dumps(m["title"]) if m["title"] else ""
+            f.write('  { name = "%s", map = %d, floor = %d, zone = %d%s },\n'
+                    % (m["name"], m["map"], m["floor"], m["zone"], title))
         f.write("}\n")

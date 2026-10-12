@@ -513,7 +513,15 @@ local function showquest(id, st)
     -- objectives still to do: their map, and the marker if it is there too
     zone = pfDatabase:GetBestMap(maps) or zone
   end
-  M.Open(zone)
+  if not M.Open(zone) then
+    -- a dungeon map the game will not open from here: say so, and show
+    -- where the quest is given or taken instead, if that is outside
+    local m = M.byzone[zone]
+    DEFAULT_CHAT_FRAME:AddMessage("|cff33ffccpf|rQuest: " .. qname(id) .. " -- in " ..
+      (m and m.title or "a dungeon") .. "; open your map inside to see it.")
+    zone = coords[1][3]
+    if M.byzone[zone] or not M.Open(zone) then return end
+  end
   M.Flash(points(coords, zone), label)
 end
 
