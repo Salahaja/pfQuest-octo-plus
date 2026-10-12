@@ -291,4 +291,30 @@ function M.Debug()
       tostring(tex), (x or 0) * 100, (y or 0) * 100, tostring(poi and poi.octo or false),
       tostring(m and x and nearestboss(m.zone, x * 100, y * 100))))
   end
+  -- everything else drawn on the map, pfQuest's own pins left out: whose
+  -- frame it is and its first texture, to find who draws the boss icons
+  local seen, shown = 0, 0
+  local function texof(f)
+    local regions = { f:GetRegions() }
+    for _, r in ipairs(regions) do
+      if r.GetTexture and r:GetTexture() then return r:GetTexture() end
+    end
+    return nil
+  end
+  for _, parent in ipairs({ WorldMapButton, WorldMapDetailFrame, WorldMapFrame }) do
+    local kids = { parent:GetChildren() }
+    for _, f in ipairs(kids) do
+      local fname = f:GetName() or ""
+      if f:IsShown() and not string.find(fname, "^pfMapPin") then
+        seen = seen + 1
+        if shown < 14 then
+          shown = shown + 1
+          local x, y = f:GetCenter()
+          say(string.format("  frame %s in %s, %s, at %.0f,%.0f, mouse %s", fname ~= "" and fname or "(no name)",
+            parent:GetName() or "?", tostring(texof(f)), x or 0, y or 0, tostring(f:IsMouseEnabled())))
+        end
+      end
+    end
+  end
+  say(string.format("other frames on the map: %d", seen))
 end
