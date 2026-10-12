@@ -123,7 +123,7 @@ local function bosses(zone)
         if c[3] == zone then here = c n = n + 1 end
       end
       if here and n == 1 and (here[4] or 0) >= 86400 then
-        table.insert(out, { name = pfDB["units"]["loc"][id], x = here[1], y = here[2] })
+        table.insert(out, { name = pfDB["units"]["loc"][id], x = here[1], y = here[2], lvl = u.lvl })
       end
     end
   end
@@ -164,12 +164,77 @@ local function POILeave()
   WorldMapTooltip:Hide()
 end
 
+--[[ Turtle's boss skulls are painted into the dungeon map's art (Zul'Farrak's
+  map has no landmarks, GetNumMapLandmarks() is 0), so there is nothing to
+  hook. Instead, invisible hover spots sit where our data puts each boss --
+  bosses within a few map units share one spot and its tooltip lists them
+  all (Sergeant Bly and his crew on the steps). Clicks pass on to the map. ]]
+local spots = {}
+local function SpotEnter()
+  WorldMapTooltip:SetOwner(this, "ANCHOR_RIGHT")
+  for i, b in ipairs(this.bosses) do
+    WorldMapTooltip:AddLine(b.name .. (b.lvl and ("  |cffaaaaaa" .. b.lvl .. "|r") or ""),
+      1, i == 1 and .82 or 1, i == 1 and 0 or 1)
+  end
+  WorldMapTooltip:Show()
+end
+local function SpotLeave() WorldMapTooltip:Hide() end
+local function SpotClick()
+  if WorldMapButton_OnClick then WorldMapButton_OnClick(arg1, WorldMapButton) end
+end
+
+local function spot(i)
+  if spots[i] then return spots[i] end
+  local f = CreateFrame("Button", nil, WorldMapButton)
+  f:SetFrameLevel(WorldMapButton:GetFrameLevel() + 3)
+  f:SetWidth(22)
+  f:SetHeight(22)
+  f:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+  f:SetScript("OnEnter", SpotEnter)
+  f:SetScript("OnLeave", SpotLeave)
+  f:SetScript("OnClick", SpotClick)
+  spots[i] = f
+  return f
+end
+
+function M.PlaceBossSpots()
+  local m = M.Current()
+  local groups = {}
+  if m then
+    for _, b in ipairs(bosses(m.zone)) do
+      if b.name then
+        local home
+        for _, g in ipairs(groups) do
+          local dx, dy = g.x - b.x, g.y - b.y
+          if dx * dx + dy * dy < 9 then home = g break end
+        end
+        if home then
+          table.insert(home.bosses, b)
+        else
+          table.insert(groups, { x = b.x, y = b.y, bosses = { b } })
+        end
+      end
+    end
+  end
+  local w, h = WorldMapButton:GetWidth(), WorldMapButton:GetHeight()
+  for i, g in ipairs(groups) do
+    local f = spot(i)
+    f.bosses = g.bosses
+    f:ClearAllPoints()
+    f:SetPoint("CENTER", WorldMapButton, "TOPLEFT", g.x / 100 * w, -g.y / 100 * h)
+    f:Show()
+  end
+  for i = table.getn(groups) + 1, table.getn(spots) do spots[i]:Hide() end
+end
+
 -- the map's icons are drawn by WorldMapFrame_Update, which the map's events
--- call by name: after it, give each icon a tooltip and remember where it is
+-- call by name: after it, place the boss spots, and give any landmark icons
+-- a tooltip too
 if WorldMapFrame_Update then
   local Update = WorldMapFrame_Update
   WorldMapFrame_Update = function()
     Update()
+    M.PlaceBossSpots()
     if not M.Current() then return end
     local n = GetNumMapLandmarks and GetNumMapLandmarks() or 0
     for i = 1, n do

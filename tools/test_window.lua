@@ -187,6 +187,18 @@ if TOOLTIP[1] ~= 'Edwin VanCleef' or TOOLTIP[2] then
 	errors = errors + 1
 end
 errors = errors + BADZOOM
+-- the boss hover spots on the Deadmines map: one names VanCleef
+TOOLTIP = {}
+local spotcount = 0
+for _, h in ipairs(each('OnEnter')) do
+	if rawget(h[1], 'bosses') then spotcount = spotcount + 1 call(h) end
+end
+local named = false
+for _, t in ipairs(TOOLTIP) do if string.find(t, 'Edwin VanCleef', 1, true) then named = true end end
+if spotcount < 5 or not named then
+	print(('  FAIL boss spots: %d, VanCleef named %s'):format(spotcount, tostring(named)))
+	errors = errors + 1
+end
 -- inside Zul'Farrak pfQuest's name lookup says 978; the map's own zone is 1176
 GetMapInfo = function() return 'ZulFarrak' end
 local id = pfMap:GetMapID(5, 1)
