@@ -107,6 +107,7 @@ run('instances.lua')
 QuestLogFrame = frame()
 run('questlog.lua')
 run('report.lua')
+run('capture.lua')
 
 local function each(what) local out = {} for _, h in ipairs(handlers) do if h[2] == what then out[#out + 1] = h end end return out end
 local errors, rows, dupes, other, seen = 0, 0, 0, 0, {}
@@ -247,6 +248,51 @@ if not string.find(line, '^mark: TheDeadmines|5138|Edwin VanCleef|639|50.0|50.0|
 end
 ok, err = pcall(pfQuestOctoMaps.Report)
 if not ok then print('  FAIL report: ' .. tostring(err)) errors = errors + 1 end
+-- capture: talking to Krazek (773) in Booty Bay. The Haunted Isle (616)
+-- starts with him already: nothing. An unknown title and a hand-in of
+-- Tran'rek (2864, which ends elsewhere): two finds. Standing 20 units off
+-- where the database has him: one more.
+local saved = { UnitExists, UnitName, WorldMapFrame, GetMapInfo, GetPlayerMapPosition, pfMap.GetMapID }
+pfQuestOcto_Finds = nil
+local kz = pfDB.units.data[773].coords[1]
+UnitExists = function(u) return 1, '0xF130000305000001' end
+UnitName = function(u) return 'Krazek' end
+WorldMapFrame = setmetatable({ IsShown = function() return nil end }, getmetatable(frame()))
+GetMapInfo = function() return 'Stranglethorn' end
+GetPlayerMapPosition = function() return kz[1] / 100, kz[2] / 100 end
+pfMap.GetMapID = function() return kz[3] end
+GetGossipAvailableQuests = function() return 'The Haunted Isle', 37, 'A Quest Nobody Knows', 40 end
+GetGossipActiveQuests = function() end
+GetTitleText = function() return "Tran'rek" end
+for _, h in ipairs(each('OnEvent')) do
+	for _, ev in ipairs({ 'GOSSIP_SHOW', 'QUEST_COMPLETE' }) do
+		event = ev
+		this = h[1]
+		pcall(h[3])
+	end
+end
+local got = pfQuestOcto_Finds or {}
+local unknown, tranrek, haunted = false, false, false
+for _, l in ipairs(got) do
+	if string.find(l, 'A Quest Nobody Knows', 1, true) then unknown = true end
+	if string.find(l, '|end|2864|', 1, true) then tranrek = true end
+	if string.find(l, 'Haunted', 1, true) then haunted = true end
+end
+GetPlayerMapPosition = function() return (kz[1] + 20) / 100, kz[2] / 100 end
+pfQuestOctoMaps.ClearFinds()
+for _, h in ipairs(each('OnEvent')) do event = 'GOSSIP_SHOW' this = h[1] pcall(h[3]) end
+local moved = false
+for _, l in ipairs(pfQuestOcto_Finds or {}) do if string.find(l, '|npc|||npc 20 away', 1, true) then moved = true end end
+if not (unknown and tranrek and not haunted and moved) then
+	print(('  FAIL capture: unknown %s, tranrek %s, haunted (should be false) %s, moved %s; %s'):format(
+		tostring(unknown), tostring(tranrek), tostring(haunted), tostring(moved), table.concat(got, ' / ')))
+	errors = errors + 1
+end
+UnitExists, UnitName, WorldMapFrame, GetMapInfo, GetPlayerMapPosition, pfMap.GetMapID =
+	saved[1], saved[2], saved[3], saved[4], saved[5], saved[6]
+CAPTURED = {}
+for _, l in ipairs(got) do CAPTURED[#CAPTURED + 1] = l end
+for _, l in ipairs(pfQuestOcto_Finds or {}) do CAPTURED[#CAPTURED + 1] = l end
 -- inside Zul'Farrak pfQuest's name lookup says 978; the map's own zone is 1176
 GetMapInfo = function() return 'ZulFarrak' end
 local id = pfMap:GetMapID(5, 1)

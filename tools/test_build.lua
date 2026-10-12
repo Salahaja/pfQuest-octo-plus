@@ -215,6 +215,8 @@ ok, err = pcall(run, 'questlog.lua')
 if not ok then fail('questlog.lua errors at load: %s', err) end
 ok, err = pcall(run, 'report.lua')
 if not ok then fail('report.lua errors at load: %s', err) end
+ok, err = pcall(run, 'capture.lua')
+if not ok then fail('capture.lua errors at load: %s', err) end
 ok = true
 if not ok then fail('instances.lua errors at load: %s', err) end
 if not SlashCmdList.PFQUESTOCTOINST then fail('/instq is not registered') end

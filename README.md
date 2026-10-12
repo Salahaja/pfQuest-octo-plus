@@ -130,10 +130,18 @@ Inside a dungeon, two buttons in the quest log (or `/instq mark`,
   your character, what the open map is to the game, to pfQuest and to this
   addon, and every mark. Paste it into an issue or the guild's Discord.
 
+**Quest givers, found while playing.** Talking to any NPC notes, quietly,
+what the database does not know: an NPC it has no position for (or has
+somewhere else), a quest offered there that it does not start there, a quest
+handed in there that it does not end there -- one chat line per find. The
+finds join the marks in the report. Nothing is noted for what the database
+already has, so normal questing adds little. `/instq finds clear` starts over.
+
 The marks are also kept in `WTF\Account\<ACCOUNT>\SavedVariables\pfQuest-octo-plus.lua`.
-`python tools/reports.py <report or that file>` lists every mark against the
-database; with `--write` it puts the floor zones the marks agree on into
-`tools/data/map_overrides.json`, which the build reads. `/instq marks clear`
+`python tools/reports.py <report or that file>` lists every mark and find
+against the database; with `--write` it puts the floor zones the marks agree
+on into `tools/data/map_overrides.json`, and the finds naming one NPC and one
+quest into `tools/data/finds.json` -- both read by the build. `/instq marks clear`
 starts over.
 
 ## What it cannot fix

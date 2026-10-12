@@ -750,6 +750,7 @@ SlashCmdList["PFQUESTOCTOINST"] = function(input)
   if M and M.Report and cmd == "report" then return M.Report() end
   if M and M.Mark and cmd == "mark" then return M.Mark() end
   if M and M.ClearMarks and cmd == "marks clear" then return M.ClearMarks() end
+  if M and M.ClearFinds and cmd == "finds clear" then return M.ClearFinds() end
   toggle()
 end
 

@@ -102,7 +102,7 @@ for _ev, _ids in (
 #   the 32-bit client's address space is the limit that crashes it. ]]
 LOCALES = ["ruRU", "zhCN"]
 
-VERSION = "2.5.0"
+VERSION = "2.6.0"
 DBURL = "https://octowow.st/db/?quest="
 
 
@@ -743,6 +743,41 @@ class Build:
             ref["O"].update(int(k) for k in (rec.get("O") or {}))
         self.spawned("units", "U", self.site_npc, ref)
         self.spawned("objects", "O", self.site_obj, ref)
+        self.finds()
+
+    def finds(self):
+        """What players found in game (capture.lua, tools/reports.py --write
+        into tools/data/finds.json): NPCs with no position -- some are on no
+        published list, the site's included -- and quests whose giver or
+        turn-in nobody recorded. Seen in game, so they go in as they are."""
+        path = os.path.join(HERE, "data", "finds.json")
+        if not os.path.exists(path):
+            return
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        base = self.src["base"]["units"]
+        for ident, u in (data.get("units") or {}).items():
+            ident = int(ident)
+            rec = copy.deepcopy(self.out["units"].get(ident) or base.get(ident) or {})
+            coords = norm_coords(rec) if rec.get("coords") else []
+            for x, y, zone in u["coords"]:
+                if not any(c[2] == zone and abs(c[0] - x) < 2 and abs(c[1] - y) < 2 for c in coords):
+                    coords.append([x, y, zone, 0])
+                    self.bump("npc position from players' finds")
+            rec["coords"] = coords
+            self.out["units"][ident] = rec
+            if u.get("name") and not self.loc["units"].get(ident) and not self.src["base"]["units_loc"].get(ident):
+                self.loc["units"][ident] = u["name"]
+        for part in ("start", "end"):
+            for qid, ids in (data.get(part) or {}).items():
+                rec = self.out["quests"].get(int(qid))
+                if not isinstance(rec, dict):
+                    continue
+                lst = rec.setdefault(part, {}).setdefault("U", [])
+                for ident in ids:
+                    if ident not in lst:
+                        lst.append(ident)
+                        self.bump("quest %s from players' finds" % part)
 
 
 # ------------------------------------------------------------------ output
@@ -913,12 +948,12 @@ def write_toc(locales):
                 "A collaboration of The Iron Hammers - and the hammer falls.\n"
                 "## Version: %s\n"
                 "## Dependencies: pfQuest\n"
-                "## SavedVariables: pfQuest_turtlecount, pfQuestOcto_Marks\n\n" % VERSION)
+                "## SavedVariables: pfQuest_turtlecount, pfQuestOcto_Marks, pfQuestOcto_Finds\n\n" % VERSION)
         for loc in ["data"] + locales:
             f.write("init\\%s-turtle.xml\n" % loc)
         f.write("\npatchtable.lua\n")
         # the instance quest window: its lists, the dungeon maps, the window
-        f.write("\ndb\\instances-turtle.lua\nmaps.lua\npanel.lua\ninstances.lua\nquestlog.lua\nreport.lua\n")
+        f.write("\ndb\\instances-turtle.lua\nmaps.lua\npanel.lua\ninstances.lua\nquestlog.lua\nreport.lua\ncapture.lua\n")
 
 
 def report(b, revs, stamp, inv_stamp):

@@ -146,6 +146,7 @@ function M.Report()
     string.format("pos: %s %s", fmt(h.x), fmt(h.y)),
   }
   for _, l in ipairs(pfQuestOcto_Marks or {}) do table.insert(lines, l) end
+  for _, l in ipairs(pfQuestOcto_Finds or {}) do table.insert(lines, l) end
   if not (pfQuestOcto_Marks and pfQuestOcto_Marks[1]) then
     table.insert(lines, "(no marks: target an NPC and /instq mark to add one)")
   end

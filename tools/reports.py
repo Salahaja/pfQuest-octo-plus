@@ -24,6 +24,64 @@ import re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OVERRIDES = os.path.join(HERE, "data", "map_overrides.json")
+FINDS = os.path.join(HERE, "data", "finds.json")
+
+# find: <zone>|<npc>|<ids>|<x>|<y>|<npc/start/end>|<quest ids>|<title>|<why>
+FIND = re.compile(r'find: (-?\d+)\|([^|]*)\|([\d,]*)\|([-\d.]+)\|([-\d.]+)\|(npc|start|end)\|([\d,]*)\|([^|]*)\|([^"]*)"?,?\s*$')
+
+
+def finds(paths):
+    out = []
+    for p in paths:
+        for line in open(p, encoding="utf-8", errors="replace"):
+            m = FIND.search(line)
+            if not m:
+                continue
+            zone, name, ids, x, y, kind, qids, title, why = m.groups()
+            if x == "-":
+                continue
+            out.append({"zone": int(zone), "name": name, "ids": [int(i) for i in ids.split(",") if i],
+                        "x": float(x), "y": float(y), "kind": kind,
+                        "quests": [int(q) for q in qids.split(",") if q], "title": title, "why": why})
+    return out
+
+
+def apply_finds(fs, write):
+    """NPC positions and quest givers/turn-ins players saw; only what names one
+    NPC and one quest goes in, the rest is listed to look at by hand"""
+    data = {"units": {}, "start": {}, "end": {}}
+    if os.path.exists(FINDS):
+        with open(FINDS, encoding="utf-8") as f:
+            data.update(json.load(f))
+    sure, unsure = 0, []
+    for k in fs:
+        if len(k["ids"]) != 1:
+            unsure.append(k)
+            continue
+        npc = str(k["ids"][0])
+        u = data["units"].setdefault(npc, {"name": k["name"], "coords": []})
+        spot = [k["x"], k["y"], k["zone"]]
+        if not any(c[2] == spot[2] and abs(c[0] - spot[0]) < 2 and abs(c[1] - spot[1]) < 2 for c in u["coords"]):
+            u["coords"].append(spot)
+        if k["kind"] in ("start", "end"):
+            if len(k["quests"]) != 1:
+                unsure.append(k)
+                continue
+            lst = data[k["kind"]].setdefault(str(k["quests"][0]), [])
+            if k["ids"][0] not in lst:
+                lst.append(k["ids"][0])
+        sure += 1
+    print("\nfinds: %d usable, %d to look at by hand" % (sure, len(unsure)))
+    for k in unsure:
+        print("  %-24s %-6s %-30s ids %s quests %s  (%s)" % (k["name"], k["kind"], k["title"],
+              k["ids"] or "-", k["quests"] or "-", k["why"]))
+    if write and sure:
+        data["_how"] = ("Players' finds from capture.lua via tools/reports.py: NPC positions "
+                        "(x, y, zone) and quest givers/turn-ins by npc id. The build adds them.")
+        with open(FINDS, "w", encoding="utf-8", newline="\n") as f:
+            json.dump(data, f, indent=1, sort_keys=True)
+            f.write("\n")
+        print("wrote %s; rebuild with build.py" % FINDS)
 
 # mark: <map>|<our zone>|<name>|<ids>|<x>|<y>|<game c/z>|<subzone>|db <id>@<zone>:<x>,<y> ...
 MARK = re.compile(r'mark: ([^|]*)\|(-?\d+)\|([^|]*)\|([\d,]*)\|([-\d.]+)\|([-\d.]+)\|([^|]*)\|([^|]*)\|db ?(.*?)"?,?\s*$')
@@ -54,6 +112,9 @@ def main():
     ap.add_argument("--write", action="store_true", help="put agreed floor zones into map_overrides.json")
     args = ap.parse_args()
 
+    fs = finds(args.files)
+    if fs:
+        apply_finds(fs, args.write)
     ms = marks(args.files)
     if not ms:
         print("no marks found")
