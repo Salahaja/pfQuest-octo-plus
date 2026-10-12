@@ -5,28 +5,16 @@
 -- the client's own WorldMapArea table, db/instances-turtle.lua), names the
 -- boss icons on them, and flashes a marker where /instq sends you.
 --
--- Turtle's client opens SOME dungeon maps from anywhere with
--- SetMapZoom(map id, 1), and crashes on others: map 47, Razorfen Kraul, took
--- the client down (ERROR #132 at 0x004A6D1E, 2026-10-12) after the first
--- seven opened fine. No game table says which -- WorldMapContinent.dbc holds
--- only the continents -- so a map id is used only once it has been seen to
--- open in game (SAFE below). Any other dungeon map opens with
--- SetMapToCurrentZone() from inside it. /instq maptest tries the untested
--- ones, one click at a time, writing each to the chat log before trying it.
+-- A dungeon map can't be opened from outside the dungeon. 2.2.0 to 2.2.4
+-- tried SetMapZoom(<dungeon map id>, 1): the client takes the number as a
+-- continent, reads past its continent list, shows whatever it finds there
+-- (never the right map) and soon crashes (ERROR #132 at 0x004A6D1E,
+-- 2026-10-12). SetMapZoom here only ever gets numbers from the game's own
+-- lists; a dungeon map otherwise opens with SetMapToCurrentZone() from
+-- inside it.
 
 pfQuestOctoMaps = {}
 local M = pfQuestOctoMaps
-
--- map ids seen to open with SetMapZoom(id, 1) in game, and seen to crash
-local SAFE = { [27] = true, [30] = true, [33] = true, [34] = true, [35] = true, [36] = true, [43] = true }
-local CRASH = { [47] = true }
-M.safe, M.crash = SAFE, CRASH
-
---[[ ...and none is opened from outside in normal use. The map test showed
-  the client crashing after about seven such opens in a row, whichever maps
-  they were: something runs out. Until the test finds what, a dungeon map
-  opens only from inside (SetMapToCurrentZone, as the M key does). ]]
-M.fromoutside = false
 
 local byname, byzone = {}, {}
 for _, m in pairs(pfQuestOcto_DungeonMaps or {}) do
@@ -74,12 +62,6 @@ function M.Open(zone)
     pfMap:UpdateNodes()
     return true
   end
-  if M.fromoutside and SAFE[m.map] then
-    showmap()
-    SetMapZoom(m.map, 1)
-    pfMap:UpdateNodes()
-    return true
-  end
   -- is the player in this dungeon? the map of where you stand says
   SetMapToCurrentZone()
   local cur = M.Current()
@@ -114,8 +96,6 @@ if pfMap and pfMap.SetMapByID then
       local where = m.title and listed[m.title]
       if where then
         SetMapZoom(where[1], where[2])
-      elseif M.fromoutside and SAFE[m.map] then
-        SetMapZoom(m.map, 1)
       else
         SetMapToCurrentZone()
       end
@@ -271,170 +251,6 @@ function M.Flash(points, label)
     f.label:SetText(i == 1 and label or "")
     f:Show()
   end
-end
-
--- ------------------------------------------------------------------ map test
-
--- /instq maptest: open every dungeon map in turn and record what opened.
--- Results stay in pfQuestOcto_MapTest (SavedVariables) for checking later.
-local test = CreateFrame("Frame", "pfQuestOctoMapTest", UIParent)
-test:Hide()
-test:SetWidth(320)
-test:SetHeight(64)
-test:SetPoint("TOP", 0, -80)
-test:SetFrameStrata("FULLSCREEN_DIALOG")
-test:SetBackdrop({
-  bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-  edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-  tile = true, tileSize = 16, edgeSize = 16,
-  insets = { left = 4, right = 4, top = 4, bottom = 4 },
-})
-test:SetBackdropColor(0, 0, 0, .9)
-test:EnableMouse(true)
-test:SetMovable(true)
-test:RegisterForDrag("LeftButton")
-test:SetScript("OnDragStart", function() this:StartMoving() end)
-test:SetScript("OnDragStop", function() this:StopMovingOrSizing() end)
-test.text = test:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-test.text:SetPoint("TOP", 0, -10)
-test.text:SetWidth(300)
-
-local function tbutton(text, x, fn)
-  local b = CreateFrame("Button", nil, test, "UIPanelButtonTemplate")
-  b:SetWidth(70)
-  b:SetHeight(20)
-  b:SetPoint("BOTTOMLEFT", x, 8)
-  b:SetText(text)
-  b:SetScript("OnClick", fn)
-  return b
-end
-
--- the maps to test: first floors only, unless /instq maptest floors
-local all = pfQuestOcto_DungeonMaps or {}
-local list = {}
-local function pick(floors)
-  list = {}
-  for _, m in ipairs(all) do
-    -- maps seen to crash the client are left out (Razorfen Kraul, map 47)
-    if (floors or m.floor == 1) and not CRASH[m.map] then table.insert(list, m) end
-  end
-end
-pick(false)
-
-local function show(i)
-  local m = list[i]
-  if not m then return end
-  test.i, test.read = i, GetTime() + .5
-  if not WorldMapFrame:IsShown() then
-    if ToggleWorldMap then ToggleWorldMap() else WorldMapFrame:Show() end
-  end
-  -- said before it is asked for: with the chat log on, the last line in
-  -- Logs\WoWChatLog.txt names the map if the client crashes on it
-  DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff33ffccpf|rQuest map test: opening %d/%d %s (map %d, floor %d)",
-    i, table.getn(list), m.name, m.map, m.floor))
-  SetMapZoom(m.map, m.floor)
-  test.text:SetText(string.format("%d/%d  %s  (map %d, floor %d)\nchecking...",
-    i, table.getn(list), m.name, m.map, m.floor))
-end
-
--- what opened, read a moment after asking
-local function record()
-  local m = list[test.i]
-  local got = GetMapInfo() or "?"
-  local marks = {}
-  local n = GetNumMapLandmarks and GetNumMapLandmarks() or 0
-  for i = 1, n do
-    local name = GetMapLandmarkInfo(i)
-    table.insert(marks, name or "")
-  end
-  pfQuestOcto_MapTest = pfQuestOcto_MapTest or {}
-  pfQuestOcto_MapTest[m.name] = {
-    map = m.map, floor = m.floor, opened = got, ok = got == m.name,
-    continent = GetCurrentMapContinent(), zone = GetCurrentMapZone(), landmarks = marks,
-  }
-  local status = got == m.name and "|cff55ff55opened|r" or ("|cffff5555opened " .. got .. "|r")
-  test.text:SetText(string.format("%d/%d  %s  (map %d, floor %d)\n%s, %d boss icon(s)",
-    test.i, table.getn(list), m.name, m.map, m.floor, status, n))
-  if got ~= m.name then
-    DEFAULT_CHAT_FRAME:AddMessage("|cff33ffccpf|rQuest map test: " .. m.name .. " opened " .. got)
-  end
-end
-
-test:SetScript("OnUpdate", function()
-  if this.read and GetTime() >= this.read then
-    this.read = nil
-    record()
-    if this.auto then this.next = GetTime() + 1.5 end
-  end
-  if this.auto and this.next and GetTime() >= this.next then
-    this.next = nil
-    this.run = (this.run or 0) + 1
-    if this.i < table.getn(list) and this.run >= 6 then
-      -- six in a row, then a break: the client crashes at about the eighth
-      this.auto, this.run = nil, 0
-      test.text:SetText(string.format("Paused after 6 maps. Type /reload, then\n/instq maptest %d  and Run all to go on.", this.i + 1))
-      DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff33ffccpf|rQuest map test: paused. /reload, then /instq maptest %d", this.i + 1))
-    elseif this.i < table.getn(list) then
-      show(this.i + 1)
-    else
-      this.auto = nil
-      local ok, bad = 0, 0
-      for _, r in pairs(pfQuestOcto_MapTest or {}) do
-        if r.ok then ok = ok + 1 else bad = bad + 1 end
-      end
-      DEFAULT_CHAT_FRAME:AddMessage(string.format(
-        "|cff33ffccpf|rQuest map test done: %d opened right, %d wrong. /reload to save the results.", ok, bad))
-    end
-  end
-end)
-
-tbutton("Prev", 10, function() test.auto = nil show(math.max(1, (test.i or 1) - 1)) end)
-tbutton("Next", 84, function() test.auto = nil show(math.min(table.getn(list), (test.i or 0) + 1)) end)
-tbutton("Run all", 158, function() test.auto, test.run = true, 0 show(test.i or 1) end)
-tbutton("Close", 240, function() test.auto = nil test:Hide() end)
-
--- /instq maptest [floors] [start number]
--- /instq maptest repeat: the Deadmines map (seen to open) again and again,
--- back to your own zone between: crashing near the eighth means it is the
--- number of opens, not which maps, that the client cannot take
-local rep = CreateFrame("Frame")
-rep:Hide()
-rep:SetScript("OnUpdate", function()
-  if not this.due or GetTime() < this.due then return end
-  this.n = this.n + 1
-  if this.n > 12 then
-    DEFAULT_CHAT_FRAME:AddMessage("|cff33ffccpf|rQuest map test: 12 opens of the same map and no crash.")
-    this:Hide()
-    return
-  end
-  if math.mod(this.n, 2) == 1 then
-    DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff33ffccpf|rQuest map test: repeat %d of 12, opening TheDeadmines", (this.n + 1) / 2))
-    SetMapZoom(36, 1)
-  else
-    SetMapToCurrentZone()
-  end
-  this.due = GetTime() + 1
-end)
-
-function M.MapTest(args)
-  if string.find(args or "", "repeat", 1, true) then
-    if not WorldMapFrame:IsShown() then
-      if ToggleWorldMap then ToggleWorldMap() else WorldMapFrame:Show() end
-    end
-    rep.n, rep.due = 0, GetTime()
-    rep:Show()
-    return
-  end
-  local floors = string.find(args or "", "floors", 1, true) and true or false
-  local _, _, start = string.find(args or "", "(%d+)")
-  pick(floors)
-  if LoggingChat and not LoggingChat() then
-    LoggingChat(1)
-    DEFAULT_CHAT_FRAME:AddMessage("|cff33ffccpf|rQuest map test: chat log on (Logs/WoWChatLog.txt)")
-  end
-  test.i = tonumber(start) or test.i or 1
-  test:Show()
-  show(test.i)
 end
 
 local probe = CreateFrame("Frame")

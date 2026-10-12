@@ -93,10 +93,10 @@ Clicking a quest opens the map it is on, a dungeon's own map included, and
 flashes a **!** with an arrow over it for ten seconds: on the quest giver, or
 once the quest is in your log, on whoever you speak to or turn it in to.
 
-**Dungeon maps.** pfQuest now draws its pins on Turtle's dungeon maps, and
-its Show buttons open them from anywhere. Hovering a boss icon on a dungeon
-map names the boss. `/instq maptest` opens every dungeon map in turn and
-records what opened, to check the list against the client.
+**Dungeon maps.** Inside a dungeon, pfQuest now draws its pins on Turtle's
+dungeon map, and hovering a boss icon names the boss. A dungeon map can't be
+opened from outside the dungeon: Turtle's client crashes on it. A quest whose
+targets are inside a dungeon you aren't in says so in chat and shows its giver.
 
 A quest counts as an instance's when the server files it there, when its
 giver stands inside, or when what it asks for (a mob, an object, a drop)

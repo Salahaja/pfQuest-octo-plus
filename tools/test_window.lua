@@ -77,8 +77,7 @@ SetMapToCurrentZone = noop
 BADZOOM = 0
 SetMapZoom = function(c, z)
 	OPENED[#OPENED + 1] = c
-	local verified = pfQuestOctoMaps and pfQuestOctoMaps.safe[c] and z == 1
-	if not verified and (c ~= nil and (c < 0 or c > 2) or z ~= nil and (z < 1 or z > 2)) then
+	if c ~= nil and (c < 0 or c > 2) or z ~= nil and (z < 1 or z > 2) then
 		BADZOOM = BADZOOM + 1
 		if BADZOOM < 4 then print(("  FAIL SetMapZoom(%s, %s) is outside the game's lists"):format(tostring(c), tostring(z))) end
 	end
@@ -186,10 +185,6 @@ if TOOLTIP[1] ~= 'Edwin VanCleef' or TOOLTIP[2] then
 	print('  FAIL boss icon tooltips: ' .. table.concat(TOOLTIP, ', '))
 	errors = errors + 1
 end
--- the read-only map probe
-for _, h in ipairs(each('OnEvent')) do call(h) end
-local ok, err = pcall(pfQuestOctoMaps.MapTest)
-if not ok then print('  FAIL map probe: ' .. tostring(err)) errors = errors + 1 end
 errors = errors + BADZOOM
 WINDOW_ERRORS, WINDOW_DUPES, WINDOW_OTHER, WINDOW_ROWS = errors, dupes, other, rows
 print(('  ui (%s): %d quest clicks, %d dungeon maps opened'):format(FACTION, CLICKS or 0, #OPENED))

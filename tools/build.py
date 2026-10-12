@@ -102,7 +102,7 @@ for _ev, _ids in (
 #   the 32-bit client's address space is the limit that crashes it. ]]
 LOCALES = ["ruRU", "zhCN"]
 
-VERSION = "2.2.4"
+VERSION = "2.2.5"
 DBURL = "https://octowow.st/db/?quest="
 
 
@@ -892,7 +892,7 @@ def write_toc(locales):
                 "server's own. Replaces pfQuest-octo and pfQuest-turtle - do not run them alongside.\n"
                 "## Version: %s\n"
                 "## Dependencies: pfQuest\n"
-                "## SavedVariables: pfQuest_turtlecount, pfQuestOcto_MapTest\n\n" % VERSION)
+                "## SavedVariables: pfQuest_turtlecount\n\n" % VERSION)
         for loc in ["data"] + locales:
             f.write("init\\%s-turtle.xml\n" % loc)
         f.write("\npatchtable.lua\n")

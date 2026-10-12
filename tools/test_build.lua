@@ -160,7 +160,7 @@ end
 
 -- the instance quest window: its lists point at real quests, and it loads
 if not toc:find('db\\instances-turtle.lua', 1, true) or not toc:find('\nmaps.lua', 1, true)
-	or not toc:find('\ninstances.lua', 1, true) or not toc:find('pfQuestOcto_MapTest', 1, true) then
+	or not toc:find('\ninstances.lua', 1, true) then
 	fail('the .toc does not load the instance quest window')
 end
 run('db/instances-turtle.lua')
