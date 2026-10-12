@@ -279,4 +279,16 @@ function M.Debug()
     if pin:IsShown() then shown = shown + 1 end
   end
   say(string.format("pins shown %d, map button %.0fx%.0f", shown, WorldMapButton:GetWidth(), WorldMapButton:GetHeight()))
+  -- the map's icons (Turtle's boss icons, if they are landmarks): name,
+  -- where, whether the hover is hooked, and the boss our data puts nearest
+  local n = GetNumMapLandmarks and GetNumMapLandmarks() or 0
+  say(string.format("map icons (landmarks): %d", n))
+  for i = 1, n do
+    if i > 8 then say("  ...") break end
+    local lname, _, tex, x, y = GetMapLandmarkInfo(i)
+    local poi = getglobal("WorldMapFramePOI" .. i)
+    say(string.format("  %d. '%s' icon %s at %.1f, %.1f, hooked %s, nearest boss %s", i, tostring(lname),
+      tostring(tex), (x or 0) * 100, (y or 0) * 100, tostring(poi and poi.octo or false),
+      tostring(m and x and nearestboss(m.zone, x * 100, y * 100))))
+  end
 end
