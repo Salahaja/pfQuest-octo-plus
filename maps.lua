@@ -342,7 +342,7 @@ function M.MapTest(args)
   pick(floors)
   if LoggingChat and not LoggingChat() then
     LoggingChat(1)
-    DEFAULT_CHAT_FRAME:AddMessage("|cff33ffccpf|rQuest map test: chat log on (Logs\WoWChatLog.txt)")
+    DEFAULT_CHAT_FRAME:AddMessage("|cff33ffccpf|rQuest map test: chat log on (Logs/WoWChatLog.txt)")
   end
   test.i = tonumber(start) or test.i or 1
   test:Show()
