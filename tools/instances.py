@@ -168,7 +168,64 @@ def dungeon_maps():
     return out
 
 
-def write(path, insts, header):
+def boss_spots(b):
+    """Where to put a boss's hover spot on each dungeon map: on the skull the
+    map's art paints for it (tools/data/dungeon_skulls.json), which can sit a
+    good way from where the boss stands -- Antu'sul's is 5 map units off. A
+    boss is elite or a boss by rank (not a rare), stands once on the map and
+    respawns weekly; it goes to the nearest skull within 10 units, and a skull
+    nobody reaches gets no spot. A map with no skulls painted (Scholomance)
+    keeps the bosses where they stand, close ones sharing a spot."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(here, "data", "dungeon_skulls.json"), encoding="utf-8") as f:
+        skulls = json.load(f)["maps"]
+    units = dict(b.src["base"]["units"])
+    units.update(b.out["units"])
+    names = dict(b.src["base"]["units_loc"])
+    names.update(b.loc["units"])
+
+    def bosses(zone):
+        out = []
+        for ident, u in units.items():
+            if not isinstance(u, dict) or str(u.get("rnk")) not in ("1", "3"):
+                continue
+            here_ = [c for c in u.get("coords") or [] if c[2] == zone]
+            if len(here_) == 1 and (here_[0][3] or 0) >= 86400 and names.get(ident):
+                out.append({"name": names[ident], "lvl": str(u.get("lvl") or ""),
+                            "x": here_[0][0], "y": here_[0][1]})
+        return sorted(out, key=lambda o: o["name"])
+
+    out = {}
+    for m in dungeon_maps():
+        bs = bosses(m["zone"])
+        if not bs:
+            continue
+        spots = []
+        painted = skulls.get(m["name"]) or []
+        if painted:
+            at = {}
+            for boss in bs:
+                d, k = min(((boss["x"] - x) ** 2 + (boss["y"] - y) ** 2, k) for k, (x, y) in enumerate(painted))
+                if d <= 100:
+                    at.setdefault(k, []).append((d, boss))
+            for k in sorted(at):
+                x, y = painted[k]
+                group = [boss for _, boss in sorted(at[k], key=lambda t: t[0])]
+                spots.append({"x": x, "y": y, "bosses": group})
+            b.bump("boss spots on painted skulls", len(spots))
+        else:
+            for boss in bs:
+                home = next((s for s in spots if (s["x"] - boss["x"]) ** 2 + (s["y"] - boss["y"]) ** 2 < 9), None)
+                if home:
+                    home["bosses"].append(boss)
+                else:
+                    spots.append({"x": boss["x"], "y": boss["y"], "bosses": [boss]})
+            b.bump("boss spots where the boss stands (no skulls painted)", len(spots))
+        out[m["name"]] = spots
+    return out
+
+
+def write(path, insts, header, spots=None):
     with open(path, "w", encoding="utf-8", newline="\n") as f:
         f.write(header)
         f.write("-- Read by instances.lua and maps.lua.\n\npfQuestOcto_Instances = {\n")
@@ -182,4 +239,13 @@ def write(path, insts, header):
             title = ", title = %s" % json.dumps(m["title"]) if m["title"] else ""
             f.write('  { name = "%s", map = %d, floor = %d, zone = %d%s },\n'
                     % (m["name"], m["map"], m["floor"], m["zone"], title))
+        f.write("}\n\n-- boss hover spots per dungeon map: x, y (0-100), names and levels\n"
+                "pfQuestOcto_BossSpots = {\n")
+        for name in sorted(spots or {}):
+            f.write('  ["%s"] = {\n' % name)
+            for s in spots[name]:
+                f.write("    { x = %s, y = %s, n = {%s}, l = {%s} },\n" % (
+                    s["x"], s["y"], ", ".join(json.dumps(o["name"]) for o in s["bosses"]),
+                    ", ".join(json.dumps(o["lvl"]) for o in s["bosses"])))
+            f.write("  },\n")
         f.write("}\n")

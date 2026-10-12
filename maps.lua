@@ -200,7 +200,15 @@ end
 function M.PlaceBossSpots()
   local m = M.Current()
   local groups = {}
-  if m then
+  local built = m and pfQuestOcto_BossSpots and pfQuestOcto_BossSpots[m.name]
+  if built then
+    -- placed by the build, on the skulls the map's art paints
+    for _, sp in ipairs(built) do
+      local list = {}
+      for i, n in ipairs(sp.n) do table.insert(list, { name = n, lvl = sp.l[i] }) end
+      table.insert(groups, { x = sp.x, y = sp.y, bosses = list })
+    end
+  elseif m then
     for _, b in ipairs(bosses(m.zone)) do
       if b.name then
         local home

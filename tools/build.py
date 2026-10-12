@@ -102,7 +102,7 @@ for _ev, _ids in (
 #   the 32-bit client's address space is the limit that crashes it. ]]
 LOCALES = ["ruRU", "zhCN"]
 
-VERSION = "2.2.8"
+VERSION = "2.2.9"
 DBURL = "https://octowow.st/db/?quest="
 
 
@@ -790,7 +790,8 @@ def emit(b, work, revs, stamp):
     for qid in b.removed:
         quests[qid] = "_"
     write_table(os.path.join(db, "quests-turtle.lua"), ("quests", "data-turtle"), quests, stamp)
-    instances.write(os.path.join(db, "instances-turtle.lua"), instances.build(b), HEADER % stamp)
+    instances.write(os.path.join(db, "instances-turtle.lua"), instances.build(b), HEADER % stamp,
+                    instances.boss_spots(b))
     for kind in ("units", "objects", "items"):
         write_table(os.path.join(db, "%s-turtle.lua" % kind), (kind, "data-turtle"), b.out[kind], stamp)
     for kind in ("quests", "units", "objects", "items"):
