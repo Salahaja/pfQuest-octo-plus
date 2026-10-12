@@ -21,7 +21,7 @@ local STATE_COLOR = {
 local STATE_WORD = { done = "done", active = "in log", next = "ready", low = "level", locked = "locked" }
 
 local quests, units, objects, items, qloc
-local plevel, prace, pclass
+local plevel, prace, pclass, pfaction
 local selected, hidedone = nil, false
 local expanded = {}
 local reach, chains, donecache = {}, {}, {}
@@ -36,6 +36,7 @@ local function db()
   local _, class = UnitClass("player")
   prace = pfDatabase:GetBitByRace(race)
   pclass = pfDatabase:GetBitByClass(class)
+  pfaction = UnitFactionGroup("player") == "Horde" and "H" or "A"
   -- what this character can reach and the chains depend on all of the above
   reach, chains, donecache = {}, {}, {}
   if not followers then
@@ -70,12 +71,30 @@ local function qname(id)
   return l and l.T or ("quest " .. id)
 end
 
--- quests this character can ever take
+-- someone of this faction can deal with it: pfQuest's own test, where no
+-- faction at all means anyone
+local function friendly(rec)
+  return not rec or not rec.fac or string.find(rec.fac, pfaction, 1, true)
+end
+
+-- quests this character can ever take. The race mask is not enough: 20
+-- instance quests carry none and are Horde-only because only Horde NPCs give
+-- them (An Earnest Proposition, Just Compensation, A Light in Dark Places)
 local function forme(id)
   local q = quests[id]
   if not q then return false end
   if q.race and bit.band(q.race, prace) ~= prace then return false end
   if q.class and pclass and bit.band(q.class, pclass) ~= pclass then return false end
+  local s = q.start
+  if s and (s.U or s.O) then
+    for _, u in pairs(s.U or {}) do
+      if friendly(units.data[u]) then return true end
+    end
+    for _, o in pairs(s.O or {}) do
+      if friendly(objects.data[o]) then return true end
+    end
+    return false
+  end
   return true
 end
 
@@ -84,8 +103,8 @@ end
 local function reachable(id)
   if reach[id] ~= nil then return reach[id] end
   reach[id] = false
-  if isdone(id) then reach[id] = true return true end
   if not forme(id) then return false end
+  if isdone(id) then reach[id] = true return true end
   local pre, ok, any = quests[id].pre, true, false
   if pre then
     ok = false

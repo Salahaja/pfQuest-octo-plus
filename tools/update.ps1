@@ -144,6 +144,7 @@ try {
 
     Step 'Test'
     Run 'test_build.lua' { lua (Join-Path $tools 'test_build.lua') $pfquest $cache }
+    Run 'test_window.lua' { lua (Join-Path $tools 'test_window.lua') $pfquest $cache }
     Run 'check.py --strict' { python -u (Join-Path $tools 'check.py') --strict --octodb $data --pfquest $pfquest $repo }
 
     $now = Get-Content $quests

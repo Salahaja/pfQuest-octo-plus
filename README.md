@@ -144,6 +144,7 @@ python tools/octodb.py run          # inventory the server (first run ~11 h; lat
 python tools/build.py               # resolve everything, write db/, init/, patchtable.lua, the .toc and BUILD.md
 python tools/octodb.py refs --extra ../build-cache/unverified.txt   # if build.py lists unchecked ids
 lua tools/test_build.lua <pfQuest dir> ../build-cache               # load it the way the client does
+lua tools/test_window.lua <pfQuest dir> ../build-cache              # drive the instance window as Alliance and as Horde
 python tools/check.py               # compare it with the server
 ```
 
