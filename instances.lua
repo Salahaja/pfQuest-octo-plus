@@ -415,7 +415,7 @@ bar.text:SetPoint("CENTER", 0, 0)
 
 frame.hint = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
 frame.hint:SetPoint("BOTTOMLEFT", 12, 10)
-frame.hint:SetText("Click a chain to open it, a quest to show it on the map. Shift-click links it.")
+frame.hint:SetText("Click a chain to open it, a quest to show it on the map. Right-click: the dungeon map. Shift-click links it.")
 
 local TOP = -58
 
@@ -494,7 +494,10 @@ end
 -- Show a quest: pfQuest's pins, the map they are on, and a flashing marker
 -- for five seconds on whoever to see -- the giver, or once the quest is in
 -- the log the one to speak to or turn in to, which pfQuest may not pin.
-local function showquest(id, st)
+-- A quest whose targets are in a dungeon you are not in opens the dungeon
+-- map panel (panel.lua) instead: once it is in the log, or on a right-click,
+-- or when even its giver is in there.
+local function showquest(id, st, button)
   if IsShiftKeyDown() and pfQuestCompat and pfQuestCompat.InsertQuestLink then
     pfQuestCompat.InsertQuestLink(id)
     return
@@ -503,6 +506,14 @@ local function showquest(id, st)
   local M = pfQuestOctoMaps
   local inlog = st == "active"
   local coords, who = where(id, inlog and "end" or "start")
+  local d = M and M.DungeonOf and M.DungeonOf(id)
+  if d and not M.Inside(d) then
+    local giverinside = coords and M.byzone[coords[1][3]]
+    if inlog or button == "RightButton" or giverinside or not coords then
+      M.ShowDungeon(id, d, inlog)
+      return
+    end
+  end
   if not M or not coords then
     pfMap:ShowMapID(pfDatabase:GetBestMap(maps))
     return
@@ -514,11 +525,8 @@ local function showquest(id, st)
     zone = pfDatabase:GetBestMap(maps) or zone
   end
   if not M.Open(zone) then
-    -- a dungeon map the game will not open from here: say so, and show
-    -- where the quest is given or taken instead, if that is outside
-    local m = M.byzone[zone]
-    DEFAULT_CHAT_FRAME:AddMessage("|cff33ffccpf|rQuest: " .. qname(id) .. " -- in " ..
-      (m and m.title or "a dungeon") .. "; open your map inside to see it.")
+    -- a dungeon map the game will not open from here: show where the quest
+    -- is given or taken instead, if that is outside
     zone = coords[1][3]
     if M.byzone[zone] or not M.Open(zone) then return end
   end
@@ -532,7 +540,7 @@ local function QuestClick()
     expanded[row.key] = not expanded[row.key]
     Redraw()
   elseif row.kind == "step" then
-    showquest(row.step.id, row.step.state)
+    showquest(row.step.id, row.step.state, arg1)
   end
 end
 
@@ -582,6 +590,7 @@ for i = 1, ROWS do
   b.note:SetPoint("RIGHT", -2, 0)
   b.note:SetWidth(290)
   b.note:SetJustifyH("RIGHT")
+  b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
   b:SetScript("OnClick", QuestClick)
   b:SetScript("OnEnter", QuestEnter)
   b:SetScript("OnLeave", function() GameTooltip:Hide() end)

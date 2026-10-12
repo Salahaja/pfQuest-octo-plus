@@ -102,7 +102,7 @@ for _ev, _ids in (
 #   the 32-bit client's address space is the limit that crashes it. ]]
 LOCALES = ["ruRU", "zhCN"]
 
-VERSION = "2.2.9"
+VERSION = "2.3.0"
 DBURL = "https://octowow.st/db/?quest="
 
 
@@ -898,7 +898,7 @@ def write_toc(locales):
             f.write("init\\%s-turtle.xml\n" % loc)
         f.write("\npatchtable.lua\n")
         # the instance quest window: its lists, the dungeon maps, the window
-        f.write("\ndb\\instances-turtle.lua\nmaps.lua\ninstances.lua\n")
+        f.write("\ndb\\instances-turtle.lua\nmaps.lua\npanel.lua\ninstances.lua\n")
 
 
 def report(b, revs, stamp, inv_stamp):

@@ -93,10 +93,16 @@ Clicking a quest opens the map it is on, a dungeon's own map included, and
 flashes a **!** with an arrow over it for five seconds: on the quest giver, or
 once the quest is in your log, on whoever you speak to or turn it in to.
 
-**Dungeon maps.** Inside a dungeon, pfQuest now draws its pins on Turtle's
-dungeon map, and hovering a boss icon names the boss. A dungeon map can't be
-opened from outside the dungeon: Turtle's client crashes on it. A quest whose
-targets are inside a dungeon you aren't in says so in chat and shows its giver.
+**Dungeon maps.** A quest whose targets are in a dungeon you are not in opens
+a map of that dungeon in a panel of its own, drawn from the client's map
+pictures: the mobs to kill (red), objects to use (yellow) and whatever drops
+your quest items (orange) are pinned on it, and a **!** pulses on the giver
+or turn-in if they stand inside. It opens once the quest is in your log, on
+a right-click, or when the giver is in the dungeon too; multi-floor dungeons
+get floor buttons. Inside a dungeon, pfQuest draws its pins on Turtle's own
+dungeon map. On both, hovering a painted boss skull names the boss: the
+skulls were found in the map art by `tools/skulls.py`
+(`tools/data/dungeon_skulls.json`), and each boss is put on its skull.
 
 A quest counts as an instance's when the server files it there, when its
 giver stands inside, or when what it asks for (a mob, an object, a drop)

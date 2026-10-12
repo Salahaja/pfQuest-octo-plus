@@ -102,6 +102,7 @@ WorldMapTooltip = setmetatable({}, { __index = function(_, k)
 	return noop
 end })
 run('maps.lua')
+run('panel.lua')
 run('instances.lua')
 
 local function each(what) local out = {} for _, h in ipairs(handlers) do if h[2] == what then out[#out + 1] = h end end return out end
@@ -148,7 +149,12 @@ for _, inst in ipairs(pfQuestOcto_Instances) do
 				-- click a quest: pins, opens a map, flashes the marker
 				if row.kind == 'step' then
 					for _, c in ipairs(each('OnClick')) do
-						if c[1] == h[1] then call(c) CLICKS = (CLICKS or 0) + 1 end
+						if c[1] == h[1] then
+							-- every other quest right-clicked: the dungeon map panel
+							CLICKS = (CLICKS or 0) + 1
+							arg1 = math.fmod(CLICKS, 2) == 0 and 'RightButton' or 'LeftButton'
+							call(c)
+						end
 					end
 				end
 				local ids = {}
@@ -197,6 +203,20 @@ local named = false
 for _, t in ipairs(TOOLTIP) do if string.find(t, 'Edwin VanCleef', 1, true) then named = true end end
 if spotcount < 5 or not named then
 	print(('  FAIL boss spots: %d, VanCleef named %s'):format(spotcount, tostring(named)))
+	errors = errors + 1
+end
+-- the dungeon map panel on Scarab Shells (2865): Zul'Farrak's map, the
+-- scarabs pinned, its skulls named
+local zf = pfQuestOctoMaps.byname.ZulFarrak
+local ok, err = pcall(pfQuestOctoMaps.ShowDungeon, 2865, zf, true)
+if not ok then print('  FAIL dungeon panel: ' .. tostring(err)) errors = errors + 1 end
+local pinned, skullspots = 0, 0
+for _, h in ipairs(each('OnEnter')) do
+	if rawget(h[1], 'what') then pinned = pinned + 1 end
+	if rawget(h[1], 'names') then skullspots = skullspots + 1 end
+end
+if pinned < 10 or skullspots < 8 then
+	print(('  FAIL dungeon panel: %d pins, %d skull spots'):format(pinned, skullspots))
 	errors = errors + 1
 end
 -- inside Zul'Farrak pfQuest's name lookup says 978; the map's own zone is 1176

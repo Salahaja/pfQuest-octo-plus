@@ -24,6 +24,7 @@ end
 -- Lua 5.0 built-ins the client has and 5.4 does not
 table.getn = function(t) return #t end
 string.gfind = string.gmatch
+math.mod = math.fmod
 
 -- ---------------------------------------------------------------- base
 pfDB = setmetatable({}, { __index = function(t, k) local v = {} rawset(t, k, v) return v end })
@@ -185,6 +186,7 @@ frame = function()
 		end
 		if k:match('^Create') then return creates end
 		if k == 'GetName' then return function() return 'StubFrame' end end
+		if k == 'GetFrameLevel' or k == 'GetWidth' or k == 'GetHeight' then return function() return 100 end end
 		return noop
 	end
 	return f
@@ -196,6 +198,8 @@ WorldMapFrame, WorldMapButton, WorldMapTooltip = frame(), frame(), frame()
 local ok, err = pcall(run, 'maps.lua')
 if not ok then fail('maps.lua errors at load: %s', err) end
 if not (pfQuestOctoMaps and pfQuestOctoMaps.byname.TheDeadmines) then fail('maps.lua does not know TheDeadmines') end
+ok, err = pcall(run, 'panel.lua')
+if not ok then fail('panel.lua errors at load: %s', err) end
 ok, err = pcall(run, 'instances.lua')
 if not ok then fail('instances.lua errors at load: %s', err) end
 if not SlashCmdList.PFQUESTOCTOINST then fail('/instq is not registered') end
