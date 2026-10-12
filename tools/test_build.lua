@@ -104,6 +104,14 @@ for _, id in ipairs(expected) do
 end
 if missing > 0 then fail('%d server quest(s) missing after the merge', missing) end
 if untitled > 0 then fail('%d server quest(s) without a title', untitled) end
+-- pfQuest's quest log runs both texts through string.gsub: a missing one
+-- errors the moment the quest is taken
+local notext = 0
+for _, id in ipairs(expected) do
+	local l = QL[id]
+	if type(l) == 'table' and (type(l.O) ~= 'string' or type(l.D) ~= 'string') then notext = notext + 1 end
+end
+if notext > 0 then fail('%d server quest(s) missing objective or description text', notext) end
 
 local left = 0
 for _, id in ipairs(lines(cache .. '/removed-quests.txt')) do
