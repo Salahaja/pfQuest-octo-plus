@@ -102,7 +102,7 @@ for _ev, _ids in (
 #   the 32-bit client's address space is the limit that crashes it. ]]
 LOCALES = ["ruRU", "zhCN"]
 
-VERSION = "2.1.0"
+VERSION = "2.1.1"
 DBURL = "https://octowow.st/db/?quest="
 
 

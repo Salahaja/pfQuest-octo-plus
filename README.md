@@ -77,10 +77,17 @@ Pick one to see:
 - **Key / attunement**: the whole chain in the order it is done, for
   Onyxia, Molten Core, Blackwing Lair, upper Blackrock Spire, the Shadowforge
   Key, Scholomance, Maraudon, Naxxramas and Karazhan.
-- **Quests**: everything the instance has for your race and class. Each is
-  marked *done*, *in log*, *ready*, *level* (too low) or *locked*. A locked
-  quest names the quest to do first. Clicking it pins that step on the map;
-  shift-click links it.
+- **Quests**: everything the instance has for your race and class. A chain
+  is one row with its progress (2/5) and the step to do now; click it to
+  open the steps. Each step is marked *done*, *in log*, *ready*, *level*
+  (too low) or *locked*, with its giver, zone and map coordinates. Clicking
+  a step pins it on the map; shift-click links it.
+
+Only steps your character can reach count: the other faction's half of a
+chain does not, and quests that share a name are one step. A quest you have
+done, or have in your log, counts the single-path steps before it as done
+too, so a history that started late still adds up. **Query server** at the
+top runs `/db query` and redraws when the answer arrives.
 
 A quest counts as an instance's when the server files it there, when its
 giver stands inside, or when what it asks for (a mob, an object, a drop)
