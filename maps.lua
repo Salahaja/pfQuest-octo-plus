@@ -22,6 +22,12 @@ local SAFE = { [27] = true, [30] = true, [33] = true, [34] = true, [35] = true, 
 local CRASH = { [47] = true }
 M.safe, M.crash = SAFE, CRASH
 
+--[[ ...and none is opened from outside in normal use. The map test showed
+  the client crashing after about seven such opens in a row, whichever maps
+  they were: something runs out. Until the test finds what, a dungeon map
+  opens only from inside (SetMapToCurrentZone, as the M key does). ]]
+M.fromoutside = false
+
 local byname, byzone = {}, {}
 for _, m in pairs(pfQuestOcto_DungeonMaps or {}) do
   byname[m.name] = m
@@ -68,7 +74,7 @@ function M.Open(zone)
     pfMap:UpdateNodes()
     return true
   end
-  if SAFE[m.map] then
+  if M.fromoutside and SAFE[m.map] then
     showmap()
     SetMapZoom(m.map, 1)
     pfMap:UpdateNodes()
@@ -108,7 +114,7 @@ if pfMap and pfMap.SetMapByID then
       local where = m.title and listed[m.title]
       if where then
         SetMapZoom(where[1], where[2])
-      elseif SAFE[m.map] then
+      elseif M.fromoutside and SAFE[m.map] then
         SetMapZoom(m.map, 1)
       else
         SetMapToCurrentZone()
@@ -362,7 +368,13 @@ test:SetScript("OnUpdate", function()
   end
   if this.auto and this.next and GetTime() >= this.next then
     this.next = nil
-    if this.i < table.getn(list) then
+    this.run = (this.run or 0) + 1
+    if this.i < table.getn(list) and this.run >= 6 then
+      -- six in a row, then a break: the client crashes at about the eighth
+      this.auto, this.run = nil, 0
+      test.text:SetText(string.format("Paused after 6 maps. Type /reload, then\n/instq maptest %d  and Run all to go on.", this.i + 1))
+      DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff33ffccpf|rQuest map test: paused. /reload, then /instq maptest %d", this.i + 1))
+    elseif this.i < table.getn(list) then
       show(this.i + 1)
     else
       this.auto = nil
@@ -378,11 +390,41 @@ end)
 
 tbutton("Prev", 10, function() test.auto = nil show(math.max(1, (test.i or 1) - 1)) end)
 tbutton("Next", 84, function() test.auto = nil show(math.min(table.getn(list), (test.i or 0) + 1)) end)
-tbutton("Run all", 158, function() test.auto = true show(test.i or 1) end)
+tbutton("Run all", 158, function() test.auto, test.run = true, 0 show(test.i or 1) end)
 tbutton("Close", 240, function() test.auto = nil test:Hide() end)
 
 -- /instq maptest [floors] [start number]
+-- /instq maptest repeat: the Deadmines map (seen to open) again and again,
+-- back to your own zone between: crashing near the eighth means it is the
+-- number of opens, not which maps, that the client cannot take
+local rep = CreateFrame("Frame")
+rep:Hide()
+rep:SetScript("OnUpdate", function()
+  if not this.due or GetTime() < this.due then return end
+  this.n = this.n + 1
+  if this.n > 12 then
+    DEFAULT_CHAT_FRAME:AddMessage("|cff33ffccpf|rQuest map test: 12 opens of the same map and no crash.")
+    this:Hide()
+    return
+  end
+  if math.mod(this.n, 2) == 1 then
+    DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff33ffccpf|rQuest map test: repeat %d of 12, opening TheDeadmines", (this.n + 1) / 2))
+    SetMapZoom(36, 1)
+  else
+    SetMapToCurrentZone()
+  end
+  this.due = GetTime() + 1
+end)
+
 function M.MapTest(args)
+  if string.find(args or "", "repeat", 1, true) then
+    if not WorldMapFrame:IsShown() then
+      if ToggleWorldMap then ToggleWorldMap() else WorldMapFrame:Show() end
+    end
+    rep.n, rep.due = 0, GetTime()
+    rep:Show()
+    return
+  end
   local floors = string.find(args or "", "floors", 1, true) and true or false
   local _, _, start = string.find(args or "", "(%d+)")
   pick(floors)
