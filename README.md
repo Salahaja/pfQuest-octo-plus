@@ -68,6 +68,27 @@ databases agree on it, which brings back 28, including the engineering
 specialisations. Holiday quests show only with **Display Event & Daily
 Quests** on. pfQuest cannot tell whether a holiday is running right now.
 
+## Instance quests
+
+`/db instances` (or `/instq`) opens a list of every dungeon and raid,
+Turtle's own included, with how many of its quests this character has done.
+Pick one to see:
+
+- **Key / attunement**: the whole chain in the order it is done, for
+  Onyxia, Molten Core, Blackwing Lair, upper Blackrock Spire, the Shadowforge
+  Key, Scholomance, Maraudon, Naxxramas and Karazhan.
+- **Quests**: everything the instance has for your race and class. Each is
+  marked *done*, *in log*, *ready*, *level* (too low) or *locked*. A locked
+  quest names the quest to do first. Clicking it pins that step on the map;
+  shift-click links it.
+
+A quest counts as an instance's when the server files it there, when its
+giver stands inside, or when what it asks for (a mob, an object, a drop)
+exists only inside. That last rule finds the ones filed elsewhere, such as Red
+Silk Bandanas under Westfall or the Thorium Brotherhood's Molten Core turn-ins.
+"Done" comes from pfQuest's quest history, so run `/db query` once per
+character to load what the server knows you have finished.
+
 ## What it cannot fix
 
 - **106 quests whose giver has no position anywhere.** 63 event NPCs that

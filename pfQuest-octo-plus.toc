@@ -2,7 +2,7 @@
 ## Title: |cff33ffccpf|cffffffffQuest |cffcccccc[Octo DB+]
 ## Author: Shagu, Gurky, txtsd, paokkerkir, ryanmr82; built by Salahaja
 ## Notes: The OctoWoW quest database for pfQuest, checked against the server's own. Replaces pfQuest-octo and pfQuest-turtle - do not run them alongside.
-## Version: 2.0.3
+## Version: 2.1.0
 ## Dependencies: pfQuest
 ## SavedVariables: pfQuest_turtlecount
 
@@ -12,3 +12,6 @@ init\ruRU-turtle.xml
 init\zhCN-turtle.xml
 
 patchtable.lua
+
+db\instances-turtle.lua
+instances.lua

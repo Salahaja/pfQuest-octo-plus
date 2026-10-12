@@ -158,6 +158,44 @@ for _, z in ipairs({ 5600, 5098, 5550, 5132, 5140 }) do
 	if pfDB.zones.enUS[z] then fail('phantom zone %d still named', z) end
 end
 
+-- the instance quest window: its lists point at real quests, and it loads
+if not toc:find('db\\instances-turtle.lua', 1, true) or not toc:find('\ninstances.lua', 1, true) then
+	fail('the .toc does not load the instance quest window')
+end
+run('db/instances-turtle.lua')
+local insts, ghosts = 0, 0
+for _, inst in ipairs(pfQuestOcto_Instances or {}) do
+	insts = insts + 1
+	for _, list in ipairs({ inst.quests, inst.key }) do
+		for _, id in ipairs(list) do
+			if type(Q[id]) ~= 'table' then ghosts = ghosts + 1 end
+		end
+	end
+end
+if insts < 30 then fail('only %d instances listed', insts) end
+if ghosts > 0 then fail('%d instance quest(s) are not in the database', ghosts) end
+local creates = function() return frame() end
+local base_frame = frame
+frame = function()
+	local f = base_frame()
+	getmetatable(f).__index = function(_, k)
+		if k == 'SetScript' then
+			return function(self, what, fn) handlers[#handlers + 1] = { self, what, fn } end
+		end
+		if k:match('^Create') then return creates end
+		if k == 'GetName' then return function() return 'StubFrame' end end
+		return noop
+	end
+	return f
+end
+UIParent, UISpecialFrames = frame(), {}
+getglobal = function() return frame() end
+SlashCmdList.PFDB = noop
+local ok, err = pcall(run, 'instances.lua')
+if not ok then fail('instances.lua errors at load: %s', err) end
+if not SlashCmdList.PFQUESTOCTOINST then fail('/instq is not registered') end
+print(string.format('  %d instances listed', insts))
+
 if pfQuest.dburl ~= 'https://octowow.st/db/?quest=' then fail('dburl is %s', tostring(pfQuest.dburl)) end
 if not calls.BuildNameIndex then fail('the name index is not rebuilt after the merge') end
 if not calls.Reload then fail('pfDatabase:Reload() was not called') end

@@ -69,20 +69,21 @@ function Fail($text, $code = 1) {
     Write-Host "`nFAILED: $text" -ForegroundColor Red
     exit $code
 }
-# native commands: stream their output, stop on a non-zero exit
+# native commands: stream their output, stop on a non-zero exit. Piping through
+# Out-Host is what puts a program's output in the 5.1 transcript.
 function Run($what, [scriptblock] $cmd) {
-    & $cmd
+    & $cmd | Out-Host
     if ($LASTEXITCODE -ne 0) { Fail "$what (exit $LASTEXITCODE)" $LASTEXITCODE }
 }
 function Octodb([string[]] $more) {
-    & python -u (Join-Path $tools 'octodb.py') @more --data $data
+    & python -u (Join-Path $tools 'octodb.py') @more --data $data | Out-Host
     if ($LASTEXITCODE -eq 2) {
         Fail ("the site stopped answering (DDoS filter or outage). Everything fetched is kept; " +
               "run this again later and it carries on.") 2
     }
     if ($LASTEXITCODE -ne 0) { Fail "octodb.py $($more[0]) (exit $LASTEXITCODE)" }
 }
-function Git { & git -C $repo @args }
+function RepoGit { & git -C $repo @args }
 # quest id -> name, from the inventory (too big for ConvertFrom-Json in 5.1)
 function Names([string[]] $ids) {
     if (-not $ids) { return }
@@ -90,9 +91,11 @@ function Names([string[]] $ids) {
 }
 $env:PYTHONIOENCODING = 'utf-8'
 
+# test_build.lua reads the .toc from the current folder
+Push-Location $repo
 try {
     Write-Host "pfQuest-octo-plus update, $Mode mode, $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
-    if ((Git status --porcelain -- tools) -and -not $DryRun) {
+    if ((RepoGit status --porcelain -- tools) -and -not $DryRun) {
         Fail 'tools/ has uncommitted changes. Commit or stash them first, so an automatic commit does not sweep them up.'
     }
 
@@ -150,14 +153,14 @@ try {
     & git -C $repo diff --quiet -I $stamp -- @generated
     if ($LASTEXITCODE -eq 0) {
         Write-Host 'No change to the database. Nothing to commit.' -ForegroundColor Green
-        Git checkout -q -- @generated
+        RepoGit checkout -q -- @generated
         return
     }
     Write-Host ("Quests added: {0}   removed: {1}" -f $added.Count, $gone.Count)
     $addedNames = @(Names ($added | Select-Object -First 40))
     $addedNames | ForEach-Object { Write-Host "  + $_" }
     $gone | Select-Object -First 40 | ForEach-Object { Write-Host "  - $_" }
-    Git diff --stat -I $stamp -- @generated
+    RepoGit diff --stat -I $stamp -- @generated
 
     if ($DryRun) {
         Write-Host "`n-DryRun: left uncommitted in $repo" -ForegroundColor Yellow
@@ -180,9 +183,9 @@ try {
     if ($gone) { $msg += ($gone | Select-Object -First 40 | ForEach-Object { "  - $_" }) }
     $msgFile = Join-Path $cache 'commit-msg.txt'
     [System.IO.File]::WriteAllText($msgFile, ($msg -join "`n") + "`n")
-    Git add -- @generated tools/build.py
+    RepoGit add -- @generated tools/build.py
     Run 'git commit' { git -C $repo commit -q -F $msgFile }
-    Write-Host "Committed $version ($(Git rev-parse --short HEAD))"
+    Write-Host "Committed $version ($(RepoGit rev-parse --short HEAD))"
 
     if (-not $NoPush) {
         Run 'git push' { git -C $repo push -q origin HEAD:main }
@@ -202,6 +205,7 @@ try {
         }
     }
 } finally {
+    Pop-Location
     $lockFile.Close()
     Remove-Item $lock -ErrorAction SilentlyContinue
     Write-Host "`nLog: $log"

@@ -555,9 +555,9 @@ class Crawler:
         self.sess = session
         self.max_age = refresh_days * 86400
 
-    def fetch(self, kind, ident, url):
+    def fetch(self, kind, ident, url, force=False):
         """Stored page if fresh, else fetched and stored. -> page text."""
-        if self.store.fresh(kind, ident, self.max_age):
+        if not force and self.store.fresh(kind, ident, self.max_age):
             page = self.store.load_page(kind, ident)
             if page is not None:
                 return page, False
@@ -717,8 +717,8 @@ class Crawler:
 
     # --- pages
 
-    def quest_page(self, qid):
-        page, new = self.fetch("quest", qid, BASE + "?quest=%d" % qid)
+    def quest_page(self, qid, force=False):
+        page, new = self.fetch("quest", qid, BASE + "?quest=%d" % qid, force)
         q = parse_quest(page)
         if q is None:
             self.store.mark_absent("quest", qid)
@@ -736,8 +736,13 @@ class Crawler:
                  if not self.store.fresh("quest", q, self.max_age)]
         todo = (todo + stale)[:limit] if limit else todo + stale
         print("quests: %d page(s) to read" % len(todo))
+        #[[ A quest a category lists but no page was parsed for is read from
+        #   the site, not the stored copy: an id checked when it was still
+        #   empty keeps that empty page, and the new quest would be marked
+        #   absent from it. ]]
+        unread = set(self.store.ids("SELECT id FROM quests WHERE detail IS NULL"))
         for n, qid in enumerate(todo, 1):
-            self.quest_page(qid)
+            self.quest_page(qid, qid in unread)
             if n % 50 == 0:
                 self.store.commit()
                 print("  ... %d/%d" % (n, len(todo)))
