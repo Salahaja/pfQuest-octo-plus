@@ -66,6 +66,11 @@ function M.FindQuest(id, complete)
   end
   if pts[1] then
     M.Flash(pts, (name or "") .. (complete and "  (turn in)" or ""))
+  else
+    -- say so rather than nothing: no spot is known for it
+    local q = pfDB["quests"]["loc"][id]
+    DEFAULT_CHAT_FRAME:AddMessage("|cff33ffccpf|rQuest: no " .. (complete and "turn-in" or "objective") ..
+      " position known for " .. (q and q.T or ("quest " .. id)) .. ".")
   end
 end
 
@@ -97,7 +102,9 @@ open:SetScript("OnClick", function()
 end)
 if pfUI and pfUI.api and pfUI.api.SkinButton then pfUI.api.SkinButton(open) end
 
--- pfQuest makes its Show button when the log first opens; take it then
+-- pfQuest makes its Show button when it loads, before this file: take it
+-- now, and again when the log opens in case it came later
+hook()
 local watch = CreateFrame("Frame", nil, QuestLogFrame)
 watch:SetScript("OnShow", hook)
 watch:SetScript("OnUpdate", function()
