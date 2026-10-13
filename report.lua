@@ -1,3 +1,6 @@
+-- Fields in mark and find lines are separated by ';': a '|' starts a UI
+-- escape in WoW text ('|n' is a new line, '|c' a colour), and the 2.5/2.6
+-- lines' '|npc|' came out of the report window broken across lines.
 -- Reports testers can share. /instq report opens a window of plain text to
 -- copy (Ctrl+A, Ctrl+C) into Discord or an issue: the addon version, the
 -- character, what the open map is to the game, to pfQuest and to this addon,
@@ -75,7 +78,7 @@ function M.Mark()
       if table.getn(db) >= 4 then break end
     end
   end
-  local line = string.format("mark: %s|%s|%s|%s|%s|%s|%s|%s|db %s",
+  local line = string.format("mark: %s;%s;%s;%s;%s;%s;%s;%s;db %s",
     h.name, h.m and h.m.zone or 0, name, table.concat(ids, ","), fmt(h.x), fmt(h.y),
     tostring(h.c) .. "/" .. tostring(h.z), h.subzone, table.concat(db, " "))
   pfQuestOcto_Marks = pfQuestOcto_Marks or {}

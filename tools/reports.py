@@ -27,7 +27,7 @@ OVERRIDES = os.path.join(HERE, "data", "map_overrides.json")
 FINDS = os.path.join(HERE, "data", "finds.json")
 
 # find: <zone>|<npc>|<ids>|<x>|<y>|<npc/start/end>|<quest ids>|<title>|<why>
-FIND = re.compile(r'find: (-?\d+)\|([^|]*)\|([\d,]*)\|([-\d.]+)\|([-\d.]+)\|(npc|start|end)\|([\d,]*)\|([^|]*)\|([^"]*)"?,?\s*$')
+FIND = re.compile(r'find: (-?\d+)[|;]([^|;]*)[|;]([\d,]*)[|;]([-\d.]+)[|;]([-\d.]+)[|;](npc|start|end)[|;]([\d,]*)[|;]([^|;]*)[|;]([^"]*)"?,?\s*$')
 
 
 def finds(paths):
@@ -84,7 +84,8 @@ def apply_finds(fs, write):
         print("wrote %s; rebuild with build.py" % FINDS)
 
 # mark: <map>|<our zone>|<name>|<ids>|<x>|<y>|<game c/z>|<subzone>|db <id>@<zone>:<x>,<y> ...
-MARK = re.compile(r'mark: ([^|]*)\|(-?\d+)\|([^|]*)\|([\d,]*)\|([-\d.]+)\|([-\d.]+)\|([^|]*)\|([^|]*)\|db ?(.*?)"?,?\s*$')
+# fields separated by ';' (2.6.1 on) or '|' (2.5/2.6 saved variables)
+MARK = re.compile(r'mark: ([^|;]*)[|;](-?\d+)[|;]([^|;]*)[|;]([\d,]*)[|;]([-\d.]+)[|;]([-\d.]+)[|;]([^|;]*)[|;]([^|;]*)[|;]db ?(.*?)"?,?\s*$')
 DB = re.compile(r"(\d+)@(\d+):([-\d.]+),([-\d.]+)")
 
 
@@ -113,9 +114,14 @@ def main():
     args = ap.parse_args()
 
     fs = finds(args.files)
+    ms = marks(args.files)
+    # a mark of an NPC the database has nowhere on that map is a position
+    for k in ms:
+        if len(k["ids"]) == 1 and k["x"] is not None and k["ours"] and                 not any(d[1] == k["ours"] for d in k["db"]):
+            fs.append({"zone": k["ours"], "name": k["name"], "ids": k["ids"], "x": k["x"], "y": k["y"],
+                       "kind": "npc", "quests": [], "title": "", "why": "marked, not placed on this map"})
     if fs:
         apply_finds(fs, args.write)
-    ms = marks(args.files)
     if not ms:
         print("no marks found")
         return

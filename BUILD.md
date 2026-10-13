@@ -1,6 +1,6 @@
 # Build report
 
-Built 2026-10-12 18:09 from the server inventory exported 2026-10-12 18:09:32.
+Built 2026-10-13 00:18 from the server inventory exported 2026-10-13 00:18:09.
 
 | source | revision |
 |---|---|
@@ -14,7 +14,7 @@ Built 2026-10-12 18:09 from the server inventory exported 2026-10-12 18:09:32.
 | quests on the server | 6552 |
 | quests written | 6552 |
 | quests removed (not on the server) | 194 |
-| npcs written | 9971 |
+| npcs written | 9975 |
 | objects written | 15794 |
 | items written | 10774 |
 
@@ -28,12 +28,13 @@ Built 2026-10-12 18:09 from the server inventory exported 2026-10-12 18:09:32.
 | event marked by hand | 39 |
 | event taken from the other databases | 105 |
 | instance key quests listed | 79 |
-| instance quests listed | 1033 |
+| instance quests listed | 1037 |
 | item source added: base | 152 |
 | item source added: octo | 32 |
 | item source added: ryan | 114 |
 | item source added: server | 2506 |
 | level corrected | 10 |
+| npc position from players' finds | 4 |
 | objective added: base | 118 |
 | objective added: octo | 39 |
 | objective added: ryan | 423 |

@@ -1,0 +1,47 @@
+{
+ "_how": "Players' finds from capture.lua and /instq mark via tools/reports.py: NPC positions (x, y, zone) and quest givers/turn-ins by npc id; the build adds them. Sources are in tools/data/reports/. Left out: Alormion and Dronormu (2026-10-13 report) -- the database has them on 1941, the report read the map as 2300, a shared zone name fixed in maps.lua.",
+ "end": {},
+ "start": {},
+ "units": {
+  "11486": {
+   "coords": [
+    [
+     20.0,
+     65.8,
+     2557
+    ]
+   ],
+   "name": "Prince Tortheldrin"
+  },
+  "11488": {
+   "coords": [
+    [
+     27.6,
+     83.2,
+     2557
+    ]
+   ],
+   "name": "Illyanna Ravenoak"
+  },
+  "11496": {
+   "coords": [
+    [
+     10.4,
+     79.6,
+     2557
+    ]
+   ],
+   "name": "Immol'thar"
+  },
+  "14358": {
+   "coords": [
+    [
+     31.7,
+     75.2,
+     2557
+    ]
+   ],
+   "name": "Shen'dralar Ancient"
+  }
+ }
+}

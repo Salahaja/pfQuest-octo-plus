@@ -65,7 +65,9 @@ pfDatabase = { GetBitByRace = function() return RACEBIT end, GetBitByClass = fun
 	GetBestMap = noop, QueryServer = noop }
 pfMap = { GetMapNameByID = function(_, z) return 'zone' end, ShowMapID = noop, UpdateNodes = noop,
 	-- pfQuest's name lookup inside Zul'Farrak gives the quest id, 978
-	GetMapID = function() if GetMapInfo() == 'ZulFarrak' then return 978 end end, SetMapByID = noop }
+	GetMapID = function() if GetMapInfo() == 'ZulFarrak' then return 978 end end, SetMapByID = noop,
+	-- pfQuest's own lookup: the first id with that name
+	GetMapIDByName = function(_, n) for id, v in pairs(pfDB.zones.loc) do if v == n then return id end end end }
 WorldMapFrame, WorldMapButton, WorldMapTooltip = frame(), frame(), frame()
 SetMapZoom, ToggleWorldMap = noop, noop
 GetMapInfo = function() return 'TheDeadmines' end
@@ -243,7 +245,7 @@ pfQuestOcto_Marks = nil
 local ok, err = pcall(pfQuestOctoMaps.Mark)
 if not ok then print('  FAIL mark: ' .. tostring(err)) errors = errors + 1 end
 local line = pfQuestOcto_Marks and pfQuestOcto_Marks[1] or ''
-if not string.find(line, '^mark: TheDeadmines|5138|Edwin VanCleef|639|50.0|50.0|') or not string.find(line, '639@5138:75.7,28.6', 1, true) then
+if not string.find(line, '^mark: TheDeadmines;5138;Edwin VanCleef;639;50.0;50.0;') or string.find(line, '|', 1, true) or not string.find(line, '639@5138:75.7,28.6', 1, true) then
 	print('  FAIL mark line: ' .. line) errors = errors + 1
 end
 ok, err = pcall(pfQuestOctoMaps.Report)
@@ -275,14 +277,15 @@ local got = pfQuestOcto_Finds or {}
 local unknown, tranrek, haunted = false, false, false
 for _, l in ipairs(got) do
 	if string.find(l, 'A Quest Nobody Knows', 1, true) then unknown = true end
-	if string.find(l, '|end|2864|', 1, true) then tranrek = true end
+	if string.find(l, ';end;2864;', 1, true) then tranrek = true end
+	if string.find(l, '|', 1, true) then haunted = true end -- a '|' breaks the report window
 	if string.find(l, 'Haunted', 1, true) then haunted = true end
 end
 GetPlayerMapPosition = function() return (kz[1] + 20) / 100, kz[2] / 100 end
 pfQuestOctoMaps.ClearFinds()
 for _, h in ipairs(each('OnEvent')) do event = 'GOSSIP_SHOW' this = h[1] pcall(h[3]) end
 local moved = false
-for _, l in ipairs(pfQuestOcto_Finds or {}) do if string.find(l, '|npc|||npc 20 away', 1, true) then moved = true end end
+for _, l in ipairs(pfQuestOcto_Finds or {}) do if string.find(l, ';npc;;;npc 20 away', 1, true) then moved = true end end
 if not (unknown and tranrek and not haunted and moved) then
 	print(('  FAIL capture: unknown %s, tranrek %s, haunted (should be false) %s, moved %s; %s'):format(
 		tostring(unknown), tostring(tranrek), tostring(haunted), tostring(moved), table.concat(got, ' / ')))
@@ -293,6 +296,11 @@ UnitExists, UnitName, WorldMapFrame, GetMapInfo, GetPlayerMapPosition, pfMap.Get
 CAPTURED = {}
 for _, l in ipairs(got) do CAPTURED[#CAPTURED + 1] = l end
 for _, l in ipairs(pfQuestOcto_Finds or {}) do CAPTURED[#CAPTURED + 1] = l end
+-- a shared zone name goes to the id with spawns
+for name, want in pairs({ ["Caverns of Time"] = 1941, ["Zul'Farrak"] = 1176, ["Dire Maul"] = 2557, ["Westfall"] = 40 }) do
+	local got = pfMap:GetMapIDByName(name)
+	if got ~= want then print(('  FAIL zone name %s gives %s, not %d'):format(name, tostring(got), want)) errors = errors + 1 end
+end
 -- inside Zul'Farrak pfQuest's name lookup says 978; the map's own zone is 1176
 GetMapInfo = function() return 'ZulFarrak' end
 local id = pfMap:GetMapID(5, 1)

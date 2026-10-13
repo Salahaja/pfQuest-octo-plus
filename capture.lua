@@ -93,7 +93,7 @@ local function checknpc(name, ids, zone, x, y)
   end
   if placed then return end
   local why = not ids[1] and "unknown npc" or (far and string.format("npc %.0f away", far) or "npc not placed here")
-  find(string.format("find: %s|%s|%s|%s|%s|npc|||%s", zone, name, table.concat(ids, ","), fmt(x), fmt(y), why),
+  find(string.format("find: %s;%s;%s;%s;%s;npc;;;%s", zone, name, table.concat(ids, ","), fmt(x), fmt(y), why),
     "npc" .. name .. zone, name .. ": " .. why)
 end
 
@@ -101,7 +101,7 @@ end
 local function checkquest(name, ids, zone, x, y, title, part)
   local qids = questids(title)
   if not qids[1] then
-    find(string.format("find: %s|%s|%s|%s|%s|%s||%s|unknown quest", zone, name, table.concat(ids, ","),
+    find(string.format("find: %s;%s;%s;%s;%s;%s;;%s;unknown quest", zone, name, table.concat(ids, ","),
       fmt(x), fmt(y), part, title), part .. title .. name, name .. ": quest \"" .. title .. "\" is not in the database")
     return
   end
@@ -109,7 +109,7 @@ local function checkquest(name, ids, zone, x, y, title, part)
     local p = pfDB["quests"]["data"][q] and pfDB["quests"]["data"][q][part]
     if p and has(p.U, ids) then return end
   end
-  find(string.format("find: %s|%s|%s|%s|%s|%s|%s|%s|not the %s here", zone, name, table.concat(ids, ","),
+  find(string.format("find: %s;%s;%s;%s;%s;%s;%s;%s;not the %s here", zone, name, table.concat(ids, ","),
     fmt(x), fmt(y), part, table.concat(qids, ","), title, part == "start" and "giver" or "turn-in"),
     part .. title .. name, name .. ": \"" .. title .. "\" " .. (part == "start" and "starts" or "ends") .. " here")
 end

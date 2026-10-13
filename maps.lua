@@ -91,6 +91,45 @@ if pfMap and pfMap.GetMapID then
   end
 end
 
+--[[ A map's name to pfQuest's zone id. 23 names belong to more than one id
+  -- "Caverns of Time" is 1941 and 2300, "Zul'Farrak" 978 and 1176, "Dire
+  Maul" seven ids -- and pfQuest takes whichever it meets first, in no fixed
+  order; only one of them has any spawns, so it could draw nothing there
+  (a tester's report: Alormion and Dronormu "not placed" in the Caverns of
+  Time, their spawns on 1941, the map read as 2300). Where a name is shared,
+  the id with the most spawns wins. Worked out once, on first use. ]]
+local prefer
+local function preferred()
+  prefer = {}
+  local count = {}
+  for _, kind in ipairs({ "units", "objects" }) do
+    for _, r in pairs(pfDB[kind]["data"]) do
+      if type(r) == "table" and type(r.coords) == "table" then
+        for _, c in pairs(r.coords) do
+          if c[3] then count[c[3]] = (count[c[3]] or 0) + 1 end
+        end
+      end
+    end
+  end
+  local best = {}
+  for id, name in pairs(pfDB["zones"]["loc"] or {}) do
+    local n = count[id] or 0
+    if not best[name] or n > best[name][2] then best[name] = { id, n } end
+  end
+  for name, b in pairs(best) do prefer[name] = b[1] end
+end
+M.PreferredZone = function(name)
+  if not prefer then preferred() end
+  return prefer[name]
+end
+
+if pfMap and pfMap.GetMapIDByName then
+  local GetMapIDByName = pfMap.GetMapIDByName
+  pfMap.GetMapIDByName = function(self, search)
+    return M.PreferredZone(search) or GetMapIDByName(self, search)
+  end
+end
+
 -- and its Show buttons open one, when the game can
 if pfMap and pfMap.SetMapByID then
   local SetMapByID = pfMap.SetMapByID

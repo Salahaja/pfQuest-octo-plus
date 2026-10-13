@@ -1,0 +1,14 @@
+# Report from an Iron Hammers tester, 2026-10-13 00:14 (2.6.0), level 60 Alliance Dwarf Paladin.
+# The 2.6.0 report window broke the find lines at '|n' (a WoW new line); they
+# are joined back here with ';' as in 2.6.1. Values are as reported.
+pfQuest-octo-plus 2.6.0 report, 2026-10-13 00:14  -  The Iron Hammers: and the hammer falls
+char: level 60 Alliance Dwarf PALADIN
+map: Tanaris floor - (map -) ours none | game 1/24 "Tanaris" sub "" | pfQuest 440 (own 440), 27 nodes
+pos: 54.3 39.7
+mark: DireMaul;2557;Shen'dralar Ancient;14358;31.7;75.2;13/1;Court of the Highborne;db 
+mark: DireMaul;2557;Illyanna Ravenoak;11488;27.6;83.2;13/1;Court of the Highborne;db 
+mark: DireMaul;2557;Immol'thar;11496;10.4;79.6;13/1;Prison of Immol'thar;db 
+mark: DireMaul;2557;Prince Tortheldrin;11486;20.0;65.8;13/1;The Athenaeum;db 
+find: 2300;Alormion;65018;80.1;15.6;npc;;;npc not placed here
+find: 2300;Dronormu;80943;67.4;56.7;npc;;;npc not placed here
+find: 2557;Shen'dralar Ancient;14358;31.7;75.2;npc;;;npc not placed here
