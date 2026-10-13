@@ -1,11 +1,16 @@
 {
- "_how": "Players' finds from capture.lua via tools/reports.py: NPC positions (x, y, zone) and quest givers/turn-ins by npc id. The build adds them.",
+ "_how": "Players' finds from capture.lua and /instq mark via tools/reports.py, and patch notes: NPC positions (x, y, zone), quest givers/turn-ins by npc id, item drops added (drops) and taken away by a patch (not_drops); the build applies them. Sources in tools/data/reports/.",
  "drops": {
   "83005": {
    "11380": 100
   }
  },
  "end": {},
+ "not_drops": {
+  "83005": [
+   15340
+  ]
+ },
  "start": {},
  "units": {
   "11486": {

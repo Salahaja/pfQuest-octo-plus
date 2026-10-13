@@ -102,7 +102,7 @@ for _ev, _ids in (
 #   the 32-bit client's address space is the limit that crashes it. ]]
 LOCALES = ["ruRU", "zhCN"]
 
-VERSION = "2.6.3"
+VERSION = "2.6.4"
 DBURL = "https://octowow.st/db/?quest="
 
 
@@ -779,6 +779,16 @@ class Build:
                 if str(npc) not in {str(k) for k in drops}:
                     drops[str(npc)] = chance
                     self.bump("item drop from players' finds")
+            self.out["items"][item] = rec
+        # sources a patch took away: Moam no longer drops the shard
+        for item, srcs in (data.get("not_drops") or {}).items():
+            item = int(item)
+            rec = copy.deepcopy(self.out["items"].get(item) or bitems.get(item) or {})
+            drops = rec.get("U") or {}
+            for npc in srcs:
+                for key in [k for k in drops if str(k) == str(npc)]:
+                    del drops[key]
+                    self.bump("item drop removed by a patch")
             self.out["items"][item] = rec
         for part in ("start", "end"):
             for qid, ids in (data.get(part) or {}).items():

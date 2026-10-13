@@ -291,8 +291,8 @@ if not (unknown and tranrek and not haunted and moved) then
 		tostring(unknown), tostring(tranrek), tostring(haunted), tostring(moved), table.concat(got, ' / ')))
 	errors = errors + 1
 end
--- loot: a Perfect Obsidian Shard (83005) off a Zul'Gurub boss (11382)
--- is noted; the same off Moam (15340), who the database has, is not
+-- loot: a Perfect Obsidian Shard (83005) off Bloodlord Mandokir (11382) is
+-- noted; the same off Jin'do the Hexxer (11380), who the database has, is not
 local function loot(guid, name)
 	UnitExists = function() return 1, guid end
 	UnitName = function() return name end
@@ -303,11 +303,11 @@ local function loot(guid, name)
 end
 pfQuestOctoMaps.ClearFinds()
 loot('0xF130002C76000001', 'Bloodlord Mandokir')
-loot('0xF130003BEC000001', 'Moam')
+loot('0xF130002C74000001', "Jin'do the Hexxer")
 local zg, moam = false, false
 for _, l in ipairs(pfQuestOcto_Finds or {}) do
 	if string.find(l, ';Bloodlord Mandokir;11390;', 1, true) or string.find(l, 'Mandokir', 1, true) and string.find(l, ';drop;83005;', 1, true) then zg = true end
-	if string.find(l, 'Moam', 1, true) and string.find(l, ';drop;', 1, true) then moam = true end
+	if string.find(l, "Jin'do", 1, true) and string.find(l, ';drop;', 1, true) then moam = true end
 end
 if not zg or moam then
 	print(('  FAIL loot capture: zg %s, moam (should be false) %s; %s'):format(tostring(zg), tostring(moam), table.concat(pfQuestOcto_Finds or {}, ' / ')))
