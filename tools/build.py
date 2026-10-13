@@ -102,7 +102,7 @@ for _ev, _ids in (
 #   the 32-bit client's address space is the limit that crashes it. ]]
 LOCALES = ["ruRU", "zhCN"]
 
-VERSION = "2.6.1"
+VERSION = "2.6.2"
 DBURL = "https://octowow.st/db/?quest="
 
 
@@ -768,6 +768,18 @@ class Build:
             self.out["units"][ident] = rec
             if u.get("name") and not self.loc["units"].get(ident) and not self.src["base"]["units_loc"].get(ident):
                 self.loc["units"][ident] = u["name"]
+        # quest items looted from a mob nobody lists as dropping them -- on
+        # OctoWoW, Lost to the Sands' shard drops in Zul'Gurub, not from Moam
+        bitems = self.src["base"]["items"]
+        for item, srcs in (data.get("drops") or {}).items():
+            item = int(item)
+            rec = copy.deepcopy(self.out["items"].get(item) or bitems.get(item) or {})
+            drops = rec.setdefault("U", {})
+            for npc, chance in srcs.items():
+                if str(npc) not in {str(k) for k in drops}:
+                    drops[str(npc)] = chance
+                    self.bump("item drop from players' finds")
+            self.out["items"][item] = rec
         for part in ("start", "end"):
             for qid, ids in (data.get(part) or {}).items():
                 rec = self.out["quests"].get(int(qid))

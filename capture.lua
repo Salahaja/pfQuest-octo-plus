@@ -155,6 +155,55 @@ f:SetScript("OnEvent", function()
   end
 end)
 
+-- ------------------------------------------------------------------ loot
+
+--[[ A quest item looted from a mob the database does not list as dropping
+  it. That is how Lost to the Sands' Perfect Obsidian Shard was missed: the
+  site has it from Moam in Ahn'Qiraj, and on OctoWoW it drops in Zul'Gurub.
+  The mob is the dead target being looted; loot from anything else (a chest,
+  an area loot of several corpses) is not attributed. ]]
+local function looted()
+  if not UnitExists("target") or not UnitIsDead("target") or UnitIsPlayer("target") then return end
+  local mob = UnitName("target")
+  local _, guid = UnitExists("target")
+  local ids = {}
+  if type(guid) == "string" and string.len(guid) >= 18 then
+    local id = tonumber(string.sub(guid, 7, 12), 16)
+    if id and id > 0 then table.insert(ids, id) end
+  end
+  if not ids[1] then
+    for id, n in pairs(pfDB["units"]["loc"]) do
+      if n == mob then table.insert(ids, id) end
+    end
+  end
+  local zone, x, y = position()
+  for i = 1, GetNumLootItems() do
+    local link = GetLootSlotLink and GetLootSlotLink(i)
+    local _, _, item = string.find(link or "", "item:(%d+)")
+    item = tonumber(item)
+    local rec = item and pfDB["items"]["data"][item]
+    -- an item pfQuest knows is one some quest asks for
+    if rec then
+      local listed = false
+      for npc in pairs(rec.U or {}) do
+        for _, id in ipairs(ids) do
+          if tonumber(npc) == id then listed = true end
+        end
+      end
+      if not listed then
+        local iname = pfDB["items"]["loc"][item] or ("item " .. item)
+        find(string.format("find: %s;%s;%s;%s;%s;drop;%d;%s;not a known source", zone or 0, mob,
+          table.concat(ids, ","), fmt(x), fmt(y), item, iname),
+          "drop" .. item .. mob, mob .. " dropped " .. iname)
+      end
+    end
+  end
+end
+
+local l = CreateFrame("Frame")
+l:RegisterEvent("LOOT_OPENED")
+l:SetScript("OnEvent", looted)
+
 function M.ClearFinds()
   pfQuestOcto_Finds = {}
   seen = {}

@@ -27,7 +27,7 @@ OVERRIDES = os.path.join(HERE, "data", "map_overrides.json")
 FINDS = os.path.join(HERE, "data", "finds.json")
 
 # find: <zone>|<npc>|<ids>|<x>|<y>|<npc/start/end>|<quest ids>|<title>|<why>
-FIND = re.compile(r'find: (-?\d+)[|;]([^|;]*)[|;]([\d,]*)[|;]([-\d.]+)[|;]([-\d.]+)[|;](npc|start|end)[|;]([\d,]*)[|;]([^|;]*)[|;]([^"]*)"?,?\s*$')
+FIND = re.compile(r'find: (-?\d+)[|;]([^|;]*)[|;]([\d,]*)[|;]([-\d.]+)[|;]([-\d.]+)[|;](npc|start|end|drop)[|;]([\d,]*)[|;]([^|;]*)[|;]([^"]*)"?,?\s*$')
 
 
 def finds(paths):
@@ -38,10 +38,11 @@ def finds(paths):
             if not m:
                 continue
             zone, name, ids, x, y, kind, qids, title, why = m.groups()
-            if x == "-":
+            # a drop needs no position; anything else does
+            if x == "-" and kind != "drop":
                 continue
             out.append({"zone": int(zone), "name": name, "ids": [int(i) for i in ids.split(",") if i],
-                        "x": float(x), "y": float(y), "kind": kind,
+                        "x": None if x == "-" else float(x), "y": None if y == "-" else float(y), "kind": kind,
                         "quests": [int(q) for q in qids.split(",") if q], "title": title, "why": why})
     return out
 
@@ -49,7 +50,7 @@ def finds(paths):
 def apply_finds(fs, write):
     """NPC positions and quest givers/turn-ins players saw; only what names one
     NPC and one quest goes in, the rest is listed to look at by hand"""
-    data = {"units": {}, "start": {}, "end": {}}
+    data = {"units": {}, "start": {}, "end": {}, "drops": {}}
     if os.path.exists(FINDS):
         with open(FINDS, encoding="utf-8") as f:
             data.update(json.load(f))
@@ -59,6 +60,13 @@ def apply_finds(fs, write):
             unsure.append(k)
             continue
         npc = str(k["ids"][0])
+        if k["kind"] == "drop":
+            if len(k["quests"]) == 1:
+                data.setdefault("drops", {}).setdefault(str(k["quests"][0]), {})[npc] = 100
+                sure += 1
+            else:
+                unsure.append(k)
+            continue
         u = data["units"].setdefault(npc, {"name": k["name"], "coords": []})
         spot = [k["x"], k["y"], k["zone"]]
         if not any(c[2] == spot[2] and abs(c[0] - spot[0]) < 2 and abs(c[1] - spot[1]) < 2 for c in u["coords"]):
