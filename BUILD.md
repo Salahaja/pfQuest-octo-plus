@@ -1,6 +1,6 @@
 # Build report
 
-Built 2026-10-13 01:13 from the server inventory exported 2026-10-13 01:13:02.
+Built 2026-10-13 19:57 from the server inventory exported 2026-10-13 19:57:46.
 
 | source | revision |
 |---|---|
@@ -14,8 +14,8 @@ Built 2026-10-13 01:13 from the server inventory exported 2026-10-13 01:13:02.
 | quests on the server | 6552 |
 | quests written | 6552 |
 | quests removed (not on the server) | 194 |
-| npcs written | 9975 |
-| objects written | 15794 |
+| npcs written | 10042 |
+| objects written | 15799 |
 | items written | 10774 |
 
 | decision | count |
@@ -28,7 +28,7 @@ Built 2026-10-13 01:13 from the server inventory exported 2026-10-13 01:13:02.
 | event marked by hand | 39 |
 | event taken from the other databases | 105 |
 | instance key quests listed | 79 |
-| instance quests listed | 1037 |
+| instance quests listed | 1030 |
 | item drop from players' finds | 1 |
 | item drop removed by a patch | 1 |
 | item source added: base | 152 |
@@ -47,6 +47,7 @@ Built 2026-10-13 01:13 from the server inventory exported 2026-10-13 01:13:02.
 | objects from server | 1 |
 | objects from tkb | 21146 |
 | objects placed by the server (no source had a position) | 1 |
+| objects placed on its quest's zone map too (was on a neighbour's) | 17 |
 | pre corrected from the server | 1 |
 | pre taken from ryan (the server names none) | 162 |
 | pre taken from the server | 16 |
@@ -78,4 +79,5 @@ Built 2026-10-13 01:13 from the server inventory exported 2026-10-13 01:13:02.
 | units from tkb | 14058 |
 | units hidden until their event opens | 8 |
 | units placed by the server (no source had a position) | 5 |
+| units placed on its quest's zone map too (was on a neighbour's) | 265 |
 | units position converted from the continent map | 21 |

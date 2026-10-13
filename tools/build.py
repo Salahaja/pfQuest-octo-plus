@@ -102,7 +102,7 @@ for _ev, _ids in (
 #   the 32-bit client's address space is the limit that crashes it. ]]
 LOCALES = ["ruRU", "zhCN"]
 
-VERSION = "2.6.4"
+VERSION = "2.6.5"
 DBURL = "https://octowow.st/db/?quest="
 
 
@@ -744,6 +744,62 @@ class Build:
         self.spawned("units", "U", self.site_npc, ref)
         self.spawned("objects", "O", self.site_obj, ref)
         self.finds()
+        self.border()
+
+    def border(self):
+        """Everything a quest needs, put on the quest's own zone map too.
+
+        An NPC near a zone edge is often on the neighbouring map only: Var'zhog,
+        who drops The Mystery of Karazhan I's pendant, stands in Deadwind Pass
+        but was placed at 37,27 on the Blasted Lands' map, so the quest showed
+        nothing on Deadwind's. The client's map table converts a spot exactly
+        (Maps), so where a giver, taker, target or drop source of a quest has
+        no spot on the quest's zone and one of its spots falls inside that
+        zone's map, that spot is added there (65.9,78.2 for Var'zhog). Nothing
+        is taken away. Only for what stands in three spots or fewer -- the
+        lone NPC by a border: a map shows some of the land around its zone,
+        and copying every camp of a neighbour's mobs onto it added 12,850
+        spots the 32-bit client would have to hold."""
+        base = {"U": self.src["base"]["units"], "O": self.src["base"]["objects"]}
+        kinds = {"U": "units", "O": "objects"}
+        items = dict(self.src["base"]["items"])
+        items.update(self.out["items"])
+        for qid, rec in self.out["quests"].items():
+            s = self.site.get(qid) or {}
+            zone = int((s.get("facts") or {}).get("ZoneOrSort", s.get("zone") or 0) or 0)
+            zr = self.maps.zone.get(zone)
+            if not zr or zr["map"] not in (0, 1):
+                continue
+            wanted = set()
+            for part in ("start", "end", "obj"):
+                for letter in ("U", "O"):
+                    wanted.update((letter, i) for i in bucket_ids(rec.get(part), letter))
+            for item in bucket_ids(rec.get("obj"), "I"):
+                it = items.get(item) or {}
+                for letter in ("U", "O"):
+                    wanted.update((letter, int(i)) for i in (it.get(letter) or {}))
+            for letter, ident in wanted:
+                kind = kinds[letter]
+                u = self.out[kind].get(ident) or base[letter].get(ident)
+                if not isinstance(u, dict) or not u.get("coords"):
+                    continue
+                coords = norm_coords(u)
+                if len(coords) > 3 or any(c[2] == zone for c in coords):
+                    continue
+                add = []
+                for c in coords:
+                    src = self.maps.zone.get(c[2])
+                    if not src or src["map"] != zr["map"]:
+                        continue
+                    pos = Maps.from_world(zr, *Maps.to_world(src, c[0], c[1]))
+                    # the same spot seen from two neighbours is one spot
+                    if pos and not any(abs(a[0] - pos[0]) < 1 and abs(a[1] - pos[1]) < 1 for a in add):
+                        add.append([pos[0], pos[1], zone, c[3]])
+                if add:
+                    u = copy.deepcopy(u)
+                    u["coords"] = coords + add
+                    self.out[kind][ident] = u
+                    self.bump("%s placed on its quest's zone map too (was on a neighbour's)" % kind, len(add))
 
     def finds(self):
         """What players found in game (capture.lua, tools/reports.py --write
