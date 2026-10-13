@@ -1,0 +1,5 @@
+# 2026-10-13, from an Iron Hammers player, per OctoWoW's patch notes: Lost to
+# the Sands' (70001) Perfect Obsidian Shard (83005) drops from Jin'do the
+# Hexxer (11380) in Zul'Gurub. The site still lists only Moam (15340), in
+# Ahn'Qiraj, which opens on OctoWoW in 2027. Moam is kept as well.
+find: 1977;Jin'do the Hexxer;11380;31.3;20.6;drop;83005;Perfect Obsidian Shard;patch notes: drops in Zul'Gurub
