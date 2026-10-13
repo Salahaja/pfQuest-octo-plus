@@ -391,6 +391,44 @@ function M.Debug()
     if pin:IsShown() then shown = shown + 1 end
   end
   say(string.format("pins shown %d, map button %.0fx%.0f", shown, WorldMapButton:GetWidth(), WorldMapButton:GetHeight()))
+  -- the quests with pins on this map, and how many each
+  local titles, tn = {}, 0
+  for _, node in pairs(id and pfMap.nodes and pfMap.nodes["PFQUEST"] and pfMap.nodes["PFQUEST"][id] or {}) do
+    for title in pairs(node) do
+      if not titles[title] then tn = tn + 1 titles[title] = 0 end
+      titles[title] = titles[title] + 1
+    end
+  end
+  local tl = {}
+  for t, n in pairs(titles) do table.insert(tl, t .. " " .. n) end
+  table.sort(tl)
+  say(string.format("quests with pins here (%d): %s", tn, table.concat(tl, ", ")))
+  -- the quest selected in the quest log: which id pfQuest takes it for, its
+  -- items, and whether what drops them stands on this map
+  local index = GetQuestLogSelection and GetQuestLogSelection()
+  if index and index > 0 then
+    local qtitle = GetQuestLogTitle(index)
+    local ids = pfDatabase:GetQuestIDs(index)
+    local link = GetQuestLink and GetQuestLink(index)
+    local _, _, linkid = string.find(link or "", "quest:(%d+)")
+    say(string.format("selected: %s -> ids %s (link %s)", tostring(qtitle),
+      ids and table.concat(ids, ",") or "none", tostring(linkid)))
+    for _, qid in ipairs(ids or {}) do
+      local q = pfDB["quests"]["data"][tonumber(qid)]
+      for _, item in pairs(q and q.obj and q.obj.I or {}) do
+        local it = pfDB["items"]["data"][item]
+        local here, srcs = 0, 0
+        for u in pairs(it and it.U or {}) do
+          srcs = srcs + 1
+          for _, c in pairs(pfDB["units"]["data"][u] and pfDB["units"]["data"][u].coords or {}) do
+            if c[3] == id then here = here + 1 end
+          end
+        end
+        say(string.format("  item %d %s: %d drop source(s), %d spot(s) on this map", item,
+          tostring(pfDB["items"]["loc"][item]), srcs, here))
+      end
+    end
+  end
   -- the map's icons (Turtle's boss icons, if they are landmarks): name,
   -- where, whether the hover is hooked, and the boss our data puts nearest
   local n = GetNumMapLandmarks and GetNumMapLandmarks() or 0
@@ -419,7 +457,7 @@ function M.Debug()
       local fname = f:GetName() or ""
       if f:IsShown() and not string.find(fname, "^pfMapPin") then
         seen = seen + 1
-        if shown < 14 then
+        if shown < 4 then
           shown = shown + 1
           local x, y = f:GetCenter()
           say(string.format("  frame %s in %s, %s, at %.0f,%.0f, mouse %s", fname ~= "" and fname or "(no name)",
