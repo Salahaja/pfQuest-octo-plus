@@ -106,6 +106,17 @@ end })
 run('maps.lua')
 run('panel.lua')
 run('instances.lua')
+-- pfQuest's quest-giver refresh deletes pins by title; give questlog.lua
+-- one to wrap, and a quest log holding The Runestone Curse
+QUESTIDS = {}
+pfMap.DeleteNode = noop
+pfDatabase.SearchQuests = function(self) pfMap:DeleteNode('PFQUEST', 'The Runestone Curse') end
+local SearchQuestID = pfDatabase.SearchQuestID
+pfDatabase.SearchQuestID = function(self, id, meta, ...)
+	if meta and meta.addon == 'PFQUEST' then QUESTIDS[#QUESTIDS + 1] = { id, meta.qlogid } end
+	return SearchQuestID(self, id, meta, ...)
+end
+IsQuestWatched = function() return nil end
 QuestLogFrame = frame()
 run('questlog.lua')
 run('report.lua')
@@ -322,6 +333,21 @@ for _, l in ipairs(pfQuestOcto_Finds or {}) do CAPTURED[#CAPTURED + 1] = l end
 for name, want in pairs({ ["Caverns of Time"] = 1941, ["Zul'Farrak"] = 1176, ["Dire Maul"] = 2557, ["Westfall"] = 40 }) do
 	local got = pfMap:GetMapIDByName(name)
 	if got ~= want then print(('  FAIL zone name %s gives %s, not %d'):format(name, tostring(got), want)) errors = errors + 1 end
+end
+-- taking a quest: pfQuest's giver refresh deletes its pins by title; its
+-- objective pins must come back -- but not with tracking set to manual
+pfQuest.questlog = { [40988] = { title = 'The Runestone Curse', qlogid = 3 } }
+pfQuest_config = { trackingmethod = 1 }
+QUESTIDS = {}
+pfDatabase:SearchQuests({ addon = 'PFQUEST' })
+local back = QUESTIDS[1] and QUESTIDS[1][1] == 40988 and QUESTIDS[1][2] == 3
+pfQuest_config.trackingmethod = 3
+QUESTIDS = {}
+pfDatabase:SearchQuests({ addon = 'PFQUEST' })
+local manual = QUESTIDS[1] == nil
+if not (back and manual) then
+	print(('  FAIL giver refresh: pins back %s, left alone on manual %s'):format(tostring(back), tostring(manual)))
+	errors = errors + 1
 end
 -- inside Zul'Farrak pfQuest's name lookup says 978; the map's own zone is 1176
 GetMapInfo = function() return 'ZulFarrak' end

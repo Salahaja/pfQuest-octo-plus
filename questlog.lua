@@ -74,6 +74,41 @@ function M.FindQuest(id, complete)
   end
 end
 
+-- ------------------------------------------------------------------ pfQuest fix
+
+--[[ pfQuest 8.0.0 (The-Kludge-Bureau) refreshes quest givers by difference:
+  a quest that stops being available to pick up has its pins deleted -- by
+  title, pfMap:DeleteNode("PFQUEST", title). Taking a quest is exactly that,
+  and its objective pins, added a moment earlier from the quest log under
+  the same title, went with them: a quest in the log showed nothing on the
+  map until the tracking filter was changed (which resets everything).
+  Here, after each quest-giver refresh, every quest in the log whose title
+  it deleted gets its objective pins back, under pfQuest's own rules for
+  the tracking method (3 manual, 2 tracked quests only, 4 off). ]]
+if pfDatabase and pfDatabase.SearchQuests and pfMap and pfMap.DeleteNode then
+  local SearchQuests, DeleteNode = pfDatabase.SearchQuests, pfMap.DeleteNode
+  local deleted
+  pfMap.DeleteNode = function(self, addon, title)
+    if deleted and addon == "PFQUEST" and title then deleted[title] = true end
+    return DeleteNode(self, addon, title)
+  end
+  pfDatabase.SearchQuests = function(self, meta, maps)
+    deleted = {}
+    local ok, result = pcall(SearchQuests, self, meta, maps)
+    local gone = deleted
+    deleted = nil
+    if not ok then error(result, 0) end
+    local method = pfQuest_config and tonumber(pfQuest_config["trackingmethod"])
+    for qid, q in pairs(pfQuest and pfQuest.questlog or {}) do
+      if type(qid) == "number" and q.title and q.qlogid and gone[q.title]
+          and method ~= 3 and method ~= 4 and (method ~= 2 or IsQuestWatched(q.qlogid)) then
+        pfDatabase:SearchQuestID(qid, { ["addon"] = "PFQUEST", ["qlogid"] = q.qlogid })
+      end
+    end
+    return result
+  end
+end
+
 -- ------------------------------------------------------------------ buttons
 
 local hooked
