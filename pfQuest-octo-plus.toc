@@ -2,7 +2,7 @@
 ## Title: |cff33ffccpf|cffffffffQuest |cffcccccc[Octo DB+]
 ## Author: Shagu, Gurky, txtsd, paokkerkir, ryanmr82; built by Salahaja with The Iron Hammers
 ## Notes: The OctoWoW quest database for pfQuest, checked against the server's own. Replaces pfQuest-octo and pfQuest-turtle - do not run them alongside. A collaboration of The Iron Hammers - and the hammer falls.
-## Version: 2.6.6
+## Version: 2.6.7
 ## Dependencies: pfQuest
 ## SavedVariables: pfQuest_turtlecount, pfQuestOcto_Marks, pfQuestOcto_Finds
 

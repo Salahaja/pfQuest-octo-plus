@@ -320,6 +320,20 @@ for _, l in ipairs(pfQuestOcto_Finds or {}) do
 	if string.find(l, ';Bloodlord Mandokir;11390;', 1, true) or string.find(l, 'Mandokir', 1, true) and string.find(l, ';drop;83005;', 1, true) then zg = true end
 	if string.find(l, "Jin'do", 1, true) and string.find(l, ';drop;', 1, true) then moam = true end
 end
+-- ordinary loot (Scroll of Agility II, 1477, no quest asks for it) is never noted
+GetLootSlotLink = function() return '|cffffffff|Hitem:1477:0:0:0|h[Scroll of Agility II]|h|r' end
+for _, h in ipairs(each('OnEvent')) do event = 'LOOT_OPENED' this = h[1] pcall(h[3]) end
+for _, l in ipairs(pfQuestOcto_Finds or {}) do
+	if string.find(l, ';drop;1477;', 1, true) then moam = true end
+end
+-- and the cleanup at login drops old finds of ordinary loot, keeps the rest
+pfQuestOcto_Finds = { 'find: 1977;Bloodlord Mandokir;11382;-;-;drop;1477;Scroll of Agility II;not a known source',
+	'find: 1977;Bloodlord Mandokir;11382;-;-;drop;83005;Perfect Obsidian Shard;not a known source' }
+for _, h in ipairs(each('OnEvent')) do event = 'PLAYER_ENTERING_WORLD' this = h[1] pcall(h[3]) end
+if not (pfQuestOcto_Finds and #pfQuestOcto_Finds == 1 and string.find(pfQuestOcto_Finds[1], ';83005;', 1, true)) then
+	print('  FAIL old loot finds cleanup: ' .. table.concat(pfQuestOcto_Finds or {}, ' / '))
+	errors = errors + 1
+end
 if not zg or moam then
 	print(('  FAIL loot capture: zg %s, moam (should be false) %s; %s'):format(tostring(zg), tostring(moam), table.concat(pfQuestOcto_Finds or {}, ' / ')))
 	errors = errors + 1

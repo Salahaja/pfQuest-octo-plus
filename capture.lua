@@ -162,6 +162,42 @@ end)
   site has it from Moam in Ahn'Qiraj, and on OctoWoW it drops in Zul'Gurub.
   The mob is the dead target being looted; loot from anything else (a chest,
   an area loot of several corpses) is not attributed. ]]
+-- the items some quest asks for: worked out once. pfQuest holds drop data
+-- for nearly every item in the game (26,009), so "an item pfQuest knows"
+-- is not a quest item -- 2.6.2 to 2.6.6 noted ordinary loot as finds.
+local questitems
+local function isquestitem(item)
+  if not questitems then
+    questitems = {}
+    for _, q in pairs(pfDB["quests"]["data"]) do
+      if type(q) == "table" and q.obj then
+        for _, i in pairs(q.obj.I or {}) do questitems[i] = true end
+        for _, i in pairs(q.obj.IR or {}) do questitems[i] = true end
+      end
+    end
+  end
+  return questitems[item]
+end
+
+-- does the database already list one of these mobs for the item, directly
+-- or through a shared loot table (refloot)?
+local function listed(rec, ids)
+  local function has(t)
+    for npc in pairs(t or {}) do
+      for _, id in ipairs(ids) do
+        if tonumber(npc) == id then return true end
+      end
+    end
+    return false
+  end
+  if has(rec.U) then return true end
+  local refloot = pfDB["refloot"] and pfDB["refloot"]["data"]
+  for ref in pairs(rec.R or {}) do
+    if refloot and refloot[ref] and has(refloot[ref].U) then return true end
+  end
+  return false
+end
+
 local function looted()
   if not UnitExists("target") or not UnitIsDead("target") or UnitIsPlayer("target") then return end
   local mob = UnitName("target")
@@ -181,16 +217,9 @@ local function looted()
     local link = GetLootSlotLink and GetLootSlotLink(i)
     local _, _, item = string.find(link or "", "item:(%d+)")
     item = tonumber(item)
-    local rec = item and pfDB["items"]["data"][item]
-    -- an item pfQuest knows is one some quest asks for
-    if rec then
-      local listed = false
-      for npc in pairs(rec.U or {}) do
-        for _, id in ipairs(ids) do
-          if tonumber(npc) == id then listed = true end
-        end
-      end
-      if not listed then
+    local rec = item and isquestitem(item) and pfDB["items"]["data"][item]
+    if rec and ids[1] then
+      if not listed(rec, ids) then
         local iname = pfDB["items"]["loc"][item] or ("item " .. item)
         find(string.format("find: %s;%s;%s;%s;%s;drop;%d;%s;not a known source", zone or 0, mob,
           table.concat(ids, ","), fmt(x), fmt(y), item, iname),
@@ -202,7 +231,25 @@ end
 
 local l = CreateFrame("Frame")
 l:RegisterEvent("LOOT_OPENED")
-l:SetScript("OnEvent", looted)
+l:RegisterEvent("PLAYER_ENTERING_WORLD")
+l:SetScript("OnEvent", function()
+  if event == "LOOT_OPENED" then return looted() end
+  -- once per session: drop the ordinary loot the older versions noted
+  this:UnregisterEvent("PLAYER_ENTERING_WORLD")
+  local keep, dropped = {}, 0
+  for _, line in ipairs(pfQuestOcto_Finds or {}) do
+    local _, _, item = string.find(line, "[;|]drop[;|](%d+)[;|]")
+    if item and not isquestitem(tonumber(item)) then
+      dropped = dropped + 1
+    else
+      table.insert(keep, line)
+    end
+  end
+  if dropped > 0 then
+    pfQuestOcto_Finds = keep
+    say(dropped .. " loot finds for items no quest asks for were removed (an older version noted them).")
+  end
+end)
 
 function M.ClearFinds()
   pfQuestOcto_Finds = {}
