@@ -43,6 +43,9 @@ INSTANCES = [
     ("Hateforge Quarry", "d", [5098], [5103]),
     ("Dragonmaw Retreat", "d", [5601], [5601]),
     ("Karazhan Crypt", "d", [], [5086]),
+    ("Frostmane Hollow", "d", [5734], [5734]),
+    ("Windhorn Canyon", "d", [5641], [5641]),
+    ("Stormwrought Ruins", "d", [5628], [5628]),
     ("The Black Morass", "d", [], [5204, 2366]),
     ("Zul'Gurub", "r", [19, 1977], [1977]),
     ("Molten Core", "r", [2717], [2717]),
@@ -67,6 +70,9 @@ KEYS = {
     "Blackwing Lair": [7761],                # Blackhand's Command
     "Naxxramas": [9121, 9122, 9123],         # The Dread Citadel
     "Lower Karazhan Halls": [40829],         # The Key to Karazhan X
+    # the crypt key reforged, then Alarus: Alliance (Magus Ariden, Deadwind
+    # Pass) and Horde (Kor'gan, Stonard) tell the same story
+    "Karazhan Crypt": [40317, 40310],        # The Mystery / The Depths of Karazhan VII
 }
 
 
@@ -136,9 +142,10 @@ def build(b):
                             hit = True
             if hit:
                 member.append(qid)
-        if not member and not key:
-            continue
-        levels = [quests[q]["lvl"] for q in member if quests[q].get("lvl")] or [0]
+        #[[ An instance with no quests known stays listed (Upper Karazhan opens
+        #   on OctoWoW in 2027, and its quests are not on the server yet): the
+        #   window says so rather than leave it out. ]]
+        levels = [quests[q]["lvl"] for q in member if quests[q].get("lvl")] or [60 if kind == "r" else 0]
         out.append({"name": name, "kind": kind, "lvl": int(statistics.median(levels)),
                     "quests": sorted(member), "key": key})
         b.bump("instance quests listed", len(member))

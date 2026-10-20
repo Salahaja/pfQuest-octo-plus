@@ -305,6 +305,7 @@ local function clearcache(list)
 end
 
 local function progress(a, b)
+  if b == 0 then return "" end
   local col = a == b and b > 0 and "|cff55ff55" or "|cffcccccc"
   return col .. a .. "/" .. b .. "|r"
 end
@@ -327,6 +328,9 @@ local function build(inst)
     end
   end
 
+  if g.total == 0 and g.key.total == 0 then
+    table.insert(out, { kind = "header", text = "No quests known for this instance yet", done = 0, total = 0 })
+  end
   if g.total > 0 then
     table.insert(out, { kind = "header", text = "Quests", done = g.done, total = g.total })
     for _, grp in ipairs(g.groups) do

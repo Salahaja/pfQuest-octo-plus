@@ -1,6 +1,6 @@
 # Build report
 
-Built 2026-10-16 16:47 from the server inventory exported 2026-10-16 16:47:50.
+Built 2026-10-19 22:13 from the server inventory exported 2026-10-19 22:13:12.
 
 | source | revision |
 |---|---|
@@ -27,8 +27,8 @@ Built 2026-10-16 16:47 from the server inventory exported 2026-10-16 16:47:50.
 | end taken from ryan (the server names none) | 18 |
 | event marked by hand | 39 |
 | event taken from the other databases | 105 |
-| instance key quests listed | 79 |
-| instance quests listed | 1030 |
+| instance key quests listed | 93 |
+| instance quests listed | 1055 |
 | item drop from players' finds | 1 |
 | item drop removed by a patch | 1 |
 | item source added: base | 152 |
